@@ -1,0 +1,28 @@
+{
+  "name": "@guesense-dash/shared",
+  "version": "1.0.0",
+  "description": "Shared DTOs, contracts, types and utilities",
+  "private": true,
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./api": "./dist/api/index.js",
+    "./dto": "./dist/dto/index.js",
+    "./enums": "./dist/enums/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src/**/*.ts",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {},
+  "peerDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.0"
+  },
+  "devDependencies": {}
+}

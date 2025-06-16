@@ -1,0 +1,26 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    /* Node.js Server Settings */
+    "moduleResolution": "node",
+    "outDir": "./dist",
+    "rootDir": "./src",
+
+    /* Node.js Specific */
+    "types": ["node"],
+
+    /* InversifyJS Decorators */
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "isolatedModules": false,
+
+    /* Build Performance */
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo-server"
+  },
+  "references": [
+    {
+      "path": "../shared"
+    }
+  ]
+}
