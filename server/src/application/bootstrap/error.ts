@@ -5,21 +5,30 @@ import express from 'express';
 import { getEnvironmentConfig } from '../../infrastructure/config/environment';
 
 /**
- * Setup global error handling middleware
+ * Error Handling Bootstrap
  */
-export function setupErrorHandling(app: express.Application): void {
-  const env = getEnvironmentConfig();
+export class ErrorBootstrap {
+  private env: ReturnType<typeof getEnvironmentConfig>;
 
-  // Global error handler
-  app.use((error: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    console.error('Unhandled error:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'INTERNAL_SERVER_ERROR',
-        message: env.NODE_ENV === 'production' ? 'An unexpected error occurred' : error.message,
-      },
-      timestamp: new Date().toISOString(),
-    } as BaseApiResponse<never>);
-  });
+  constructor() {
+    this.env = getEnvironmentConfig();
+  }
+
+  /**
+   * Setup global error handling middleware
+   */
+  setup(app: express.Application): void {
+    // Global error handler
+    app.use((error: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+      console.error('Unhandled error:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 'INTERNAL_SERVER_ERROR',
+          message: this.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : error.message,
+        },
+        timestamp: new Date().toISOString(),
+      } as BaseApiResponse<never>);
+    });
+  }
 }

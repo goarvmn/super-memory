@@ -10,7 +10,7 @@ import {
 } from '@guesense-dash/shared';
 import { Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
-import { DI_TYPES } from '../../../shared/types/container';
+import { DI_TYPES } from '../../../shared';
 import { IAuthService } from '../interfaces';
 import { AuthenticatedRequest } from '../middleware/AuthMiddleware';
 /**

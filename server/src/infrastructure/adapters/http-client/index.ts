@@ -1,4 +1,7 @@
 // server/src/infrastructure/adapters/http-client/index.ts
 
-export { AxiosAdapter } from './AxiosAdapter';
+// Interfaces
 export type { HttpClientConfig, HttpClientPort, HttpRequest, HttpResponse } from './HttpClientPort';
+
+// Implementations
+export { AxiosAdapter } from './AxiosAdapter';
