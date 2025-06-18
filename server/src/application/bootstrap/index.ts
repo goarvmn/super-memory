@@ -1,15 +1,10 @@
 // server/src/application/bootstrap/index.ts
 
 // Main application bootstrap
-export { createApp } from './server';
+export { ApplicationBootstrap } from './server';
 
-export {
-  setupBodyParsingMiddleware,
-  setupCorsMiddleware,
-  setupLoggingMiddleware,
-  setupMiddleware,
-  setupSecurityMiddleware,
-} from './middleware';
-
-export { setupErrorHandling } from './error';
-export { setupRoutes } from './routes';
+// Individual bootstrap classes
+export { DatabaseBootstrap } from './database';
+export { ErrorBootstrap } from './error';
+export { MiddlewareBootstrap } from './middleware';
+export { RouteBootstrap } from './routes';

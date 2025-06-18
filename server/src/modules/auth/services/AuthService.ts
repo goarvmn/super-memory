@@ -4,7 +4,7 @@ import { LoginRequest, LoginResponse, ValidateSessionResponse } from '@guesense-
 import { inject, injectable } from 'inversify';
 import jwt from 'jsonwebtoken';
 import { HttpClientFactory, HttpClientPort } from '../../../infrastructure';
-import { DI_TYPES } from '../../../shared/types/container';
+import { DI_TYPES } from '../../../shared';
 import { IAuthService } from '../interfaces/IAuthService';
 import { ISessionStore, SessionData } from '../interfaces/ISessionStore';
 
@@ -20,7 +20,10 @@ export class AuthService implements IAuthService {
 
   constructor(@inject(DI_TYPES.ISessionStore) private sessionStore: ISessionStore) {
     this.httpClient = HttpClientFactory.createGOAServiceClient();
-    this.jwtSecret = process.env.JWT_SECRET || 'jwt-secret';
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET environment variable is not defined');
+    }
+    this.jwtSecret = process.env.JWT_SECRET;
   }
 
   /**

@@ -1,22 +1,23 @@
 // server/src/index.ts
 
 import dotenv from 'dotenv';
-import { createApp } from './application';
+import { ApplicationBootstrap, DatabaseBootstrap } from './application';
 
 // Load environment variables first
 dotenv.config({ path: '.env.local' });
 
 /**
  * Server Startup
- * Production-ready server initialization
  */
 class Server {
   private port: number;
-  private app: ReturnType<typeof createApp>;
+  private app: ReturnType<typeof ApplicationBootstrap.create>;
+  private databaseBootstrap: DatabaseBootstrap;
 
   constructor() {
     this.port = this.getPort();
-    this.app = createApp();
+    this.databaseBootstrap = new DatabaseBootstrap();
+    this.app = ApplicationBootstrap.create();
   }
 
   /**
@@ -33,46 +34,63 @@ class Server {
   }
 
   /**
+   * Initialize database connection
+   */
+  private async initializeDatabase(): Promise<void> {
+    try {
+      await this.databaseBootstrap.initialize();
+    } catch (error) {
+      console.error('Failed to initialize database:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Start the server
    */
-  public start(): void {
-    const server = this.app.listen(this.port, () => {
-      console.log('🚀 GueSense Dashboard API Server started');
-      console.log(`📡 Server running on port ${this.port}`);
-      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-      console.log(`🔗 Health check: http://localhost:${this.port}/health`);
-      console.log(`🔑 Auth endpoint: http://localhost:${this.port}/api/auth/login`);
+  public async start(): Promise<void> {
+    try {
+      // Initialize database first
+      await this.initializeDatabase();
 
-      // Display available routes
-      if (process.env.NODE_ENV !== 'production') {
-        console.log('\n📋 Available endpoints:');
-        console.log('  GET  /health');
-        console.log('  POST /api/auth/login');
-        console.log('  POST /api/auth/logout (protected)');
-        console.log('  GET  /api/auth/validate (protected)');
-        console.log('  GET  /api/auth/me (protected)');
-      }
-    });
+      // Start HTTP server
+      const server = this.app.listen(this.port, () => {
+        console.log('GueSense Dashboard API Server started');
+        console.log(`Server running on port ${this.port}`);
+        console.log(`Environment: ${process.env.NODE_ENV || 'local'}`);
+        console.log(`Database connected: ${this.databaseBootstrap.isConnected()}`);
+      });
 
-    // Graceful shutdown handlers
-    this.setupGracefulShutdown(server);
+      // Setup graceful shutdown handlers
+      this.setupGracefulShutdown(server);
+    } catch (error) {
+      console.error('Failed to start server:', error);
+      throw error;
+    }
   }
 
   /**
    * Setup graceful shutdown for production
    */
   private setupGracefulShutdown(server: any): void {
-    const shutdown = (signal: string) => {
-      console.log(`\n🛑 ${signal} received, shutting down gracefully...`);
+    const shutdown = async (signal: string) => {
+      console.log(`\n${signal} received, shutting down gracefully...`);
 
-      server.close(() => {
-        console.log('✅ Server closed successfully');
-        process.exit(0);
+      server.close(async () => {
+        try {
+          // Close database connection
+          await this.databaseBootstrap.shutdown();
+          console.log('Server closed successfully');
+          process.exit(0);
+        } catch (error) {
+          console.error('Error during shutdown:', error);
+          process.exit(1);
+        }
       });
 
       // Force shutdown after 10 seconds
       setTimeout(() => {
-        console.error('❌ Forced shutdown after timeout');
+        console.error('Forced shutdown after timeout');
         process.exit(1);
       }, 10000);
     };
@@ -82,22 +100,26 @@ class Server {
 
     // Handle uncaught exceptions (production safety)
     process.on('uncaughtException', error => {
-      console.error('❌ Uncaught Exception:', error);
+      console.error('Uncaught Exception:', error);
       process.exit(1);
     });
 
     process.on('unhandledRejection', (reason, promise) => {
-      console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+      console.error('Unhandled Rejection at:', promise, 'reason:', reason);
       process.exit(1);
     });
   }
 }
 
 // Start the server
-try {
-  const server = new Server();
-  server.start();
-} catch (error) {
-  console.error('❌ Failed to start server:', error);
-  process.exit(1);
+async function startServer() {
+  try {
+    const server = new Server();
+    await server.start();
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
 }
+
+startServer();

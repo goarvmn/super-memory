@@ -6,63 +6,68 @@ import helmet from 'helmet';
 import { getEnvironmentConfig } from '../../infrastructure/config/environment';
 
 /**
- * Setup security middleware
+ * Middleware Bootstrap Handler
  */
-export function setupSecurityMiddleware(app: express.Application): void {
-  // Security headers
-  app.use(
-    helmet({
-      contentSecurityPolicy: false, // Disable for API
-      crossOriginEmbedderPolicy: false,
-    })
-  );
-}
+export class MiddlewareBootstrap {
+  private env: ReturnType<typeof getEnvironmentConfig>;
 
-/**
- * Setup CORS middleware
- */
-export function setupCorsMiddleware(app: express.Application): void {
-  const env = getEnvironmentConfig();
-
-  app.use(
-    cors({
-      origin: env.ALLOWED_ORIGINS,
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE'],
-      allowedHeaders: ['Content-Type', 'Authorization'],
-    })
-  );
-}
-
-/**
- * Setup body parsing middleware
- */
-export function setupBodyParsingMiddleware(app: express.Application): void {
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-}
-
-/**
- * Setup request logging middleware
- */
-export function setupLoggingMiddleware(app: express.Application): void {
-  const env = getEnvironmentConfig();
-
-  // Request logging (simple production-ready)
-  if (env.NODE_ENV !== 'development') {
-    app.use((req, _res, next) => {
-      console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
-      next();
-    });
+  constructor() {
+    this.env = getEnvironmentConfig();
   }
-}
 
-/**
- * Setup all middleware in correct order
- */
-export function setupMiddleware(app: express.Application): void {
-  setupSecurityMiddleware(app);
-  setupCorsMiddleware(app);
-  setupBodyParsingMiddleware(app);
-  setupLoggingMiddleware(app);
+  /**
+   * Setup security middleware
+   */
+  setupSecurity(app: express.Application): void {
+    app.use(
+      helmet({
+        contentSecurityPolicy: false,
+        crossOriginEmbedderPolicy: false,
+      })
+    );
+  }
+
+  /**
+   * Setup CORS middleware
+   */
+  setupCors(app: express.Application): void {
+    app.use(
+      cors({
+        origin: this.env.ALLOWED_ORIGINS,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization'],
+      })
+    );
+  }
+
+  /**
+   * Setup body parsing middleware
+   */
+  setupBodyParsing(app: express.Application): void {
+    app.use(express.json({ limit: '10mb' }));
+    app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  }
+
+  /**
+   * Setup request logging middleware
+   */
+  setupLogging(app: express.Application): void {
+    if (this.env.NODE_ENV !== 'development') {
+      app.use((req, _res, next) => {
+        console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+        next();
+      });
+    }
+  }
+
+  /**
+   * Setup all middleware in correct order
+   */
+  setupAll(app: express.Application): void {
+    this.setupSecurity(app);
+    this.setupCors(app);
+    this.setupBodyParsing(app);
+    this.setupLogging(app);
+  }
 }

@@ -3,7 +3,7 @@
 import { AuthErrorCode, BaseApiResponse } from '@guesense-dash/shared';
 import { NextFunction, Request, Response } from 'express';
 import { inject, injectable } from 'inversify';
-import { DI_TYPES } from '../../../shared/types/container';
+import { DI_TYPES } from '../../../shared/';
 import { IAuthService } from '../interfaces';
 import { UserRole, UserType } from '../types/AuthTypes';
 

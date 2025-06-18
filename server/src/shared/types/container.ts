@@ -9,4 +9,7 @@ export const DI_TYPES = {
   ISessionStore: Symbol.for('ISessionStore'),
   AuthMiddleware: Symbol.for('AuthMiddleware'),
   AuthController: Symbol.for('AuthController'),
+
+  // Database
+  DatabasePort: Symbol.for('DatabasePort'),
 } as const;
