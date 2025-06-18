@@ -1,7 +1,7 @@
 // shared/src/dto/base.dto.ts
 
 /**
- * Base API response wrapper
+ * Base API Response Wrapper
  */
 export interface BaseApiResponse<T> {
   success: boolean;
