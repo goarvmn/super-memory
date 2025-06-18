@@ -2,13 +2,13 @@ export default {
   // Consistent dengan .editorconfig
   tabWidth: 2,
   useTabs: false,
-  endOfLine: "lf",
+  endOfLine: 'lf',
 
   // String formatting
   singleQuote: true,
 
   // Trailing commas & semicolons
-  trailingComma: "es5",
+  trailingComma: 'es5',
   semi: true,
 
   // Bracket spacing
@@ -16,27 +16,27 @@ export default {
   bracketSameLine: false,
 
   // Arrow functions
-  arrowParens: "avoid",
+  arrowParens: 'avoid',
 
   // Print width
   printWidth: 120,
 
   // Prose wrap for markdown
-  proseWrap: "preserve",
+  proseWrap: 'preserve',
 
   // File-specific overrides
   overrides: [
     {
-      files: "*.md",
+      files: '*.md',
       options: {
         printWidth: 100,
-        proseWrap: "always",
+        proseWrap: 'always',
       },
     },
     {
-      files: "*.json",
+      files: '*.json',
       options: {
-        trailingComma: "none",
+        trailingComma: 'none',
       },
     },
   ],
