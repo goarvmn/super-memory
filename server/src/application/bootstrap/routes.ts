@@ -6,7 +6,6 @@ import { getEnvironmentConfig } from '../../infrastructure/config/environment';
 import type { AuthController, AuthMiddleware } from '../../modules/auth';
 import { DI_TYPES } from '../../shared';
 import { container } from '../container';
-import { DatabaseBootstrap } from './database';
 
 /**
  * Route Bootstrap Handler
@@ -15,14 +14,12 @@ export class RouteBootstrap {
   private env: ReturnType<typeof getEnvironmentConfig>;
   private authController: AuthController;
   private authMiddleware: AuthMiddleware;
-  private databaseBootstrap: DatabaseBootstrap;
 
   constructor() {
     this.env = getEnvironmentConfig();
     // Get controllers from DI container
     this.authController = container.get<AuthController>(DI_TYPES.AuthController);
     this.authMiddleware = container.get<AuthMiddleware>(DI_TYPES.AuthMiddleware);
-    this.databaseBootstrap = new DatabaseBootstrap();
   }
 
   /**
@@ -37,34 +34,6 @@ export class RouteBootstrap {
         environment: this.env.NODE_ENV,
         version: '1.0.0',
       });
-    });
-
-    app.get('/health/detailed', this.authMiddleware.authenticate, async (_req, res) => {
-      try {
-        const dbHealth = await this.databaseBootstrap.healthCheck();
-
-        res.json({
-          success: true,
-          timestamp: new Date().toISOString(),
-          system: {
-            environment: this.env.NODE_ENV,
-            version: '1.0.0',
-            uptime: process.uptime(),
-            memory: process.memoryUsage(),
-            pid: process.pid,
-          },
-          database: dbHealth,
-          services: {
-            // Will add Service B/C health checks later
-          },
-        });
-      } catch (error) {
-        res.status(503).json({
-          success: false,
-          error: 'Health check failed',
-          timestamp: new Date().toISOString(),
-        });
-      }
     });
   }
 

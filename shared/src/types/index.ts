@@ -1,25 +1,5 @@
 // shared/src/types/index.ts
 
-// Export merchant types
-export type {
-  ApplyTemplateResult,
-  GroupSyncInfo,
-  GroupWithMembers,
-  GroupWithSync,
-  Merchant,
-  MerchantGroup,
-  MerchantGroupMember,
-  MerchantWithSync,
-  SyncInfo,
-  SyncOperationResult,
-} from './merchant.types';
+export type { User } from './auth';
 
-// Export selection types
-export type {
-  ActionType,
-  AvailableActions,
-  SelectedMerchant,
-  SelectionEvent,
-  SelectionState,
-  SelectionType,
-} from './selection.types';
+export type { GroupMember, GroupSummary, GroupWithMembers, Merchant, MerchantWithRegistry } from './merchant';

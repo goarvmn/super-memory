@@ -1,15 +1,19 @@
 // server/src/shared/types/container.ts
 
-/**
- * Dependency Injection Type Symbols
- */
-
 export const DI_TYPES = {
+  // Infrastructure
+  Database: Symbol.for('Database'),
+
+  // Bootstrap
+  DatabaseBootstrap: Symbol.for('DatabaseBootstrap'),
+
+  // Auth Module
   IAuthService: Symbol.for('IAuthService'),
   ISessionStore: Symbol.for('ISessionStore'),
-  AuthMiddleware: Symbol.for('AuthMiddleware'),
   AuthController: Symbol.for('AuthController'),
+  AuthMiddleware: Symbol.for('AuthMiddleware'),
 
-  // Database
-  DatabasePort: Symbol.for('DatabasePort'),
-} as const;
+  // Merchant Module
+  IMerchantRepository: Symbol.for('IMerchantRepository'),
+  IGroupRepository: Symbol.for('IGroupRepository'),
+};

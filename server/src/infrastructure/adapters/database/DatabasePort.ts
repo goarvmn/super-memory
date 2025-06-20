@@ -40,4 +40,29 @@ export interface DatabasePort {
    * Start database transaction
    */
   startTransaction(): Promise<DatabaseTransaction>;
+
+  /**
+   * Create database record
+   */
+  create<T>(tbl_name: string, data: Partial<T>): Promise<T>;
+
+  /**
+   * Update database record
+   */
+  update<T>(tbl_name: string, where: any, data: Partial<T>): Promise<void>;
+
+  /**
+   * Delete database record
+   */
+  delete(tbl_name: string, where: any): Promise<void>;
+
+  /**
+   * Get database record
+   */
+  findOne<T>(tbl_name: string, where: any): Promise<T | null>;
+
+  /**
+   * Get database records
+   */
+  findMany<T>(tbl_name: string, where?: any, options?: any): Promise<T[]>;
 }
