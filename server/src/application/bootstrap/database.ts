@@ -2,7 +2,7 @@
 
 import { inject, injectable } from 'inversify';
 import { DatabasePort } from '../../infrastructure/adapters/database/DatabasePort';
-import { DI_TYPES } from '../../shared/types/container';
+import { DI_TYPES } from '../../shared';
 
 /**
  * Database Bootstrap Handler

@@ -1,4 +1,4 @@
-// server/src/modules/merchant/interfaces/IMerchantRepository.ts
+// server/src/modules/merchant/interfaces/IMerchantService.ts
 
 import {
   AddMerchantToRegistryRequest,
@@ -8,14 +8,17 @@ import {
 } from '@guesense-dash/shared';
 import { CommonParams } from 'server/src/shared';
 
-export interface IMerchantRepository {
+/**
+ * Merchant Service Interface
+ */
+export interface IMerchantService {
   /**
    * Get available merchants
    */
   getAvailableMerchants(params?: CommonParams): Promise<Merchant[]>;
 
   /**
-   * Get registered individual merchants
+   * Get list of (registered) merchants
    */
   getRegisteredIndividualMerchants(params?: CommonParams): Promise<MerchantWithRegistry[]>;
 
@@ -25,17 +28,12 @@ export interface IMerchantRepository {
   addMerchantToRegistry(params: AddMerchantToRegistryRequest): Promise<number>;
 
   /**
-   * Update merchant in registry
+   * Update merchant registry
    */
-  updateMerchantInRegistry(params: UpdateMerchantRegistryRequest): Promise<void>;
+  updateMerchantRegistry(params: UpdateMerchantRegistryRequest): Promise<void>;
 
   /**
    * Remove merchant from registry
    */
   removeMerchantFromRegistry(registryId: number): Promise<void>;
-
-  /**
-   * Check if merchant is registered
-   */
-  isMerchantRegistered(merchantId: number): Promise<boolean>;
 }

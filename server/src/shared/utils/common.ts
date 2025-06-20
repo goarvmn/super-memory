@@ -50,3 +50,11 @@ export function getSubscriberPaths(): string[] {
   const srcDir = getServerSrcDir();
   return [join(srcDir, 'subscribers/*{.ts,.js}')];
 }
+
+/**
+ * Convert pagination requset
+ */
+export const paginationToOffset = (page: number = 1, limit: number = 20) => ({
+  offset: (page - 1) * limit,
+  limit,
+});

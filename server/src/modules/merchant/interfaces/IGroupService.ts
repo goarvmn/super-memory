@@ -1,4 +1,4 @@
-// server/src/modules/merchant/interfaces/IGroupRepository.ts
+// server/src/modules/merchant/interfaces/IGroupService.ts
 
 import {
   CreateGroupRequest,
@@ -9,16 +9,20 @@ import {
 } from '@guesense-dash/shared';
 import { CommonParams } from 'server/src/shared';
 
-export interface IGroupRepository {
+/**
+ * Group Service Interface
+ */
+
+export interface IGroupService {
   /**
    * Get all groups
    */
   getAllGroups(params?: CommonParams): Promise<GroupSummary[]>;
 
   /**
-   * Get group detail
+   * Get group detail with members
    */
-  getGroupWithMembers(groupId: number): Promise<GroupWithMembers | null>;
+  getGroupWithMembers(groupId: number): Promise<GroupWithMembers>;
 
   /**
    * Create new group
@@ -31,7 +35,7 @@ export interface IGroupRepository {
   updateGroup(params: UpdateGroupRequest): Promise<void>;
 
   /**
-   * Delete group
+   * Delete group (soft delete)
    */
   deleteGroup(groupId: number): Promise<void>;
 
@@ -51,12 +55,7 @@ export interface IGroupRepository {
   setTemplateSource(groupId: number, merchantId: number): Promise<void>;
 
   /**
-   * Get group members only
+   * Get group members only (helper method)
    */
   getGroupMembers(groupId: number): Promise<GroupMember[]>;
-
-  /**
-   * Check if group exists
-   */
-  groupExists(groupId: number): Promise<boolean>;
 }

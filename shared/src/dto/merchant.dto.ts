@@ -1,17 +1,13 @@
 // shared/src/dto/merchant.dto.ts
 
-export interface GetMerchantsRequest {
-  search?: string;
-  status?: number;
-  limit?: number;
-  offset?: number;
-}
+import { PaginationRequest, SearchFilter, StatusFilter } from './common.dto';
+
+export interface GetMerchantsRequest extends PaginationRequest, StatusFilter, SearchFilter {}
 
 export interface AddMerchantToRegistryRequest {
   merchant_id: number;
   merchant_code: string;
-  group_id?: number | null;
-  is_merchant_source?: boolean;
+  group_id?: number;
 }
 
 export interface UpdateMerchantRegistryRequest {
@@ -21,12 +17,7 @@ export interface UpdateMerchantRegistryRequest {
   is_merchant_source?: boolean;
 }
 
-export interface GetGroupsRequest {
-  search?: string;
-  status?: number;
-  limit?: number;
-  offset?: number;
-}
+export interface GetGroupsRequest extends PaginationRequest, SearchFilter, StatusFilter {}
 
 export interface CreateGroupRequest {
   name: string;
