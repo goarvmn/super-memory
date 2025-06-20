@@ -1,20 +1,19 @@
 // server/src/application/bootstrap/database.ts
 
+import { inject } from 'inversify';
 import { DatabasePort } from '../../infrastructure/adapters/database';
 import { getEnvironmentConfig } from '../../infrastructure/config/environment';
-import { DatabaseFactory } from '../../infrastructure/factories/DatabaseFactory';
+import { DI_TYPES } from '../../shared';
 
 /**
  * Database Bootstrap Handler
  */
 export class DatabaseBootstrap {
-  private database: DatabasePort;
   private env: ReturnType<typeof getEnvironmentConfig>;
   private isInitialized: boolean = false;
 
-  constructor() {
+  constructor(@inject(DI_TYPES.Database) private database: DatabasePort) {
     this.env = getEnvironmentConfig();
-    this.database = DatabaseFactory.create();
   }
 
   /**
@@ -75,6 +74,7 @@ export class DatabaseBootstrap {
       if (this.isInitialized && this.database.isConnected()) {
         await this.database.destroy();
         this.isInitialized = false;
+        console.log('Database shutdown completed successfully');
       } else {
         console.log('Database already shut down');
       }
