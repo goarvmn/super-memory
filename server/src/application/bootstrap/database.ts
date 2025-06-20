@@ -1,52 +1,33 @@
 // server/src/application/bootstrap/database.ts
 
-import { inject } from 'inversify';
-import { DatabasePort } from '../../infrastructure/adapters/database';
-import { getEnvironmentConfig } from '../../infrastructure/config/environment';
-import { DI_TYPES } from '../../shared';
+import { inject, injectable } from 'inversify';
+import { DatabasePort } from '../../infrastructure/adapters/database/DatabasePort';
+import { DI_TYPES } from '../../shared/types/container';
 
 /**
  * Database Bootstrap Handler
  */
+@injectable()
 export class DatabaseBootstrap {
-  private env: ReturnType<typeof getEnvironmentConfig>;
   private isInitialized: boolean = false;
 
-  constructor(@inject(DI_TYPES.Database) private database: DatabasePort) {
-    this.env = getEnvironmentConfig();
-  }
+  constructor(@inject(DI_TYPES.Database) private database: DatabasePort) {}
 
   /**
    * Initialize database connection
    */
   async initialize(): Promise<void> {
-    try {
-      if (this.isInitialized) {
-        return;
-      }
-
-      // Initialize database connection
-      await this.database.initialize();
-
-      await this.runMigrations();
-
-      this.isInitialized = true;
-    } catch (error) {
-      console.error('Database bootstrap failed:', error);
-      throw new Error(`Database initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    if (this.isInitialized) {
+      return;
     }
-  }
 
-  /**
-   * Run migrations (always run - no auto-sync policy)
-   */
-  private async runMigrations(): Promise<void> {
-    try {
-      await this.database.runMigrations();
-    } catch (error) {
-      console.error('Database migrations failed:', error);
-      throw error;
-    }
+    // Initialize database connection
+    await this.database.initialize();
+
+    // Run migrations
+    await this.database.runMigrations();
+
+    this.isInitialized = true;
   }
 
   /**
@@ -57,86 +38,12 @@ export class DatabaseBootstrap {
   }
 
   /**
-   * Get database instance for advanced operations
-   */
-  getDatabase(): DatabasePort {
-    if (!this.isInitialized) {
-      throw new Error('Database not initialized. Call initialize() first.');
-    }
-    return this.database;
-  }
-
-  /**
    * Graceful database shutdown
    */
   async shutdown(): Promise<void> {
-    try {
-      if (this.isInitialized && this.database.isConnected()) {
-        await this.database.destroy();
-        this.isInitialized = false;
-        console.log('Database shutdown completed successfully');
-      } else {
-        console.log('Database already shut down');
-      }
-    } catch (error) {
-      console.error('Database shutdown failed:', error);
-      throw error;
+    if (this.isInitialized && this.database.isConnected()) {
+      await this.database.destroy();
+      this.isInitialized = false;
     }
-  }
-
-  /**
-   * Health check for database connection
-   */
-  async healthCheck(): Promise<{ status: string; connected: boolean; timestamp: string }> {
-    try {
-      if (!this.isInitialized) {
-        return {
-          status: 'error',
-          connected: false,
-          timestamp: new Date().toISOString(),
-        };
-      }
-
-      // Simple health check query
-      await this.database.query('SELECT 1');
-
-      return {
-        status: 'healthy',
-        connected: true,
-        timestamp: new Date().toISOString(),
-      };
-    } catch (error) {
-      console.error('Database health check failed:', error);
-      return {
-        status: 'unhealthy',
-        connected: false,
-        timestamp: new Date().toISOString(),
-      };
-    }
-  }
-
-  /**
-   * Development utilities
-   */
-  async developmentUtils(): Promise<{
-    revertLastMigration: () => Promise<void>;
-    runMigrations: () => Promise<void>;
-  }> {
-    if (this.env.NODE_ENV !== 'development') {
-      throw new Error('Development utilities only available in development mode');
-    }
-
-    return {
-      revertLastMigration: async () => {
-        console.log('Reverting last migration...');
-        await this.database.undoLastMigration();
-        console.log('Migration reverted successfully');
-      },
-      runMigrations: async () => {
-        console.log('Running migrations manually...');
-        await this.database.runMigrations();
-        console.log('Migrations completed successfully');
-      },
-    };
   }
 }

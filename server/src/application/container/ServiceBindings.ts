@@ -1,9 +1,7 @@
 // server/src/application/container/ServiceBindings.ts
 
 import { Container } from 'inversify';
-
-// Auth Module
-import { DatabasePort, TypeORMAdapter } from 'server/src/infrastructure';
+import { DatabasePort, TypeORMAdapter } from '../../infrastructure/adapters/database';
 import {
   AuthController,
   AuthMiddleware,
@@ -12,13 +10,24 @@ import {
   ISessionStore,
   SessionService,
 } from '../../modules/auth';
-import { DI_TYPES } from '../../shared';
+import { DI_TYPES } from '../../shared/types/container';
+import { DatabaseBootstrap } from '../bootstrap/database';
 
 /**
  * Service Bindings for Dependency Injection
  */
 export class ServiceBindings {
-  static bindServices(container: Container): void {
+  static bindInfrastructure(container: Container): void {
+    // Database
+    container.bind<DatabasePort>(DI_TYPES.Database).to(TypeORMAdapter).inSingletonScope();
+  }
+
+  static bindBootstrap(container: Container): void {
+    // Bootstrap Services
+    container.bind<DatabaseBootstrap>(DI_TYPES.DatabaseBootstrap).to(DatabaseBootstrap).inSingletonScope();
+  }
+
+  static bindAuth(container: Container): void {
     // Auth Services
     container.bind<IAuthService>(DI_TYPES.IAuthService).to(AuthService).inSingletonScope();
     container.bind<ISessionStore>(DI_TYPES.ISessionStore).to(SessionService).inSingletonScope();
@@ -28,8 +37,12 @@ export class ServiceBindings {
     container.bind<AuthMiddleware>(DI_TYPES.AuthMiddleware).to(AuthMiddleware).inSingletonScope();
   }
 
-  static bindExternalServices(container: Container): void {
-    // Database
-    container.bind<DatabasePort>(DI_TYPES.Database).to(TypeORMAdapter).inSingletonScope();
+  /**
+   * Bind all services to container
+   */
+  static bindAll(container: Container): void {
+    this.bindInfrastructure(container);
+    this.bindBootstrap(container);
+    this.bindAuth(container);
   }
 }

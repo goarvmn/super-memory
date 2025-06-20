@@ -16,8 +16,7 @@ class DIContainer {
   static getInstance(): Container {
     if (!this.instance) {
       this.instance = new Container();
-      ServiceBindings.bindServices(this.instance);
-      ServiceBindings.bindExternalServices(this.instance);
+      ServiceBindings.bindAll(this.instance);
     }
     return this.instance;
   }
