@@ -8,6 +8,9 @@
 
     /* Node.js Specific */
     "types": ["node"],
+    "composite": true,
+    "emitDeclarationOnly": true,
+    "allowImportingTsExtensions": true,
 
     /* InversifyJS Decorators */
     "experimentalDecorators": true,

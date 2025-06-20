@@ -13,7 +13,9 @@
     "lint": "eslint src/**/*.ts",
     "type-check": "tsc --noEmit",
     "typeorm": "typeorm-ts-node-esm",
-    "migration:create": "npm run typeorm -- migration:create"
+    "migration:create": "npm run typeorm migration:create",
+    "migration:run": "npm run typeorm migration:run -- -d src/infrastructure/config/typeorm.ts",
+    "migration:revert": "npm run typeorm migration:revert -- -d src/infrastructure/config/typeorm.ts"
   },
   "dependencies": {
     "@guesense-dash/shared": "workspace:*",
