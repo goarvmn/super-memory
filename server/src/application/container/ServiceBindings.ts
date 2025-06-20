@@ -10,7 +10,7 @@ import {
   ISessionStore,
   SessionService,
 } from '../../modules/auth';
-import { DI_TYPES } from '../../shared/types/container';
+import { DI_TYPES } from '../../shared';
 import { DatabaseBootstrap } from '../bootstrap/database';
 
 /**

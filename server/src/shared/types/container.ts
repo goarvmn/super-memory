@@ -16,4 +16,8 @@ export const DI_TYPES = {
   // Merchant Module
   IMerchantRepository: Symbol.for('IMerchantRepository'),
   IGroupRepository: Symbol.for('IGroupRepository'),
+  IMerchantService: Symbol.for('IMerchantService'),
+  IGroupService: Symbol.for('IGroupService'),
+  MerchantController: Symbol.for('MerchantController'),
+  GroupController: Symbol.for('GroupController'),
 };

@@ -2,7 +2,6 @@
 
 import {
   CreateGroupRequest,
-  GetGroupsRequest,
   GroupMember,
   GroupSummary,
   GroupWithMembers,
@@ -10,15 +9,15 @@ import {
 } from '@guesense-dash/shared';
 import { inject, injectable } from 'inversify';
 import { DatabasePort } from '../../../infrastructure/adapters/database/DatabasePort';
-import { DI_TYPES } from '../../../shared/types/container';
+import { CommonParams, DI_TYPES } from '../../../shared';
 import { IGroupRepository } from '../interfaces';
 
 @injectable()
 export class GroupRepository implements IGroupRepository {
   constructor(@inject(DI_TYPES.Database) private database: DatabasePort) {}
 
-  async getAllGroups(params: GetGroupsRequest = {}): Promise<GroupSummary[]> {
-    const { search, status, limit = 50, offset = 0 } = params;
+  async getAllGroups(params: CommonParams = {}): Promise<GroupSummary[]> {
+    const { search, status, limit = 9, offset = 0 } = params;
 
     let query = `
       SELECT 
@@ -71,7 +70,7 @@ export class GroupRepository implements IGroupRepository {
   async createGroup(params: CreateGroupRequest): Promise<number> {
     const group = await this.database.create<any>('merchant_groups', {
       name: params.name,
-      status: params.status !== undefined ? params.status : 1,
+      status: params.status ?? 1,
       merchant_source_id: params.merchant_source_id || null,
     });
 
@@ -85,7 +84,6 @@ export class GroupRepository implements IGroupRepository {
   }
 
   async deleteGroup(groupId: number): Promise<void> {
-    // soft delete: set status to 0
     await this.database.update('merchant_groups', { id: groupId }, { status: 0 });
   }
 

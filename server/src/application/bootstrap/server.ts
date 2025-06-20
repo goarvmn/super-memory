@@ -3,7 +3,7 @@
 import express from 'express';
 import { Container } from 'inversify';
 import 'reflect-metadata';
-import { DI_TYPES } from '../../shared/types/container';
+import { DI_TYPES } from '../../shared';
 import { ServiceBindings } from '../container/ServiceBindings';
 import { DatabaseBootstrap } from './database';
 import { ErrorBootstrap } from './error';

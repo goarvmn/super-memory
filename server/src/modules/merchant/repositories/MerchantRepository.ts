@@ -2,22 +2,21 @@
 
 import {
   AddMerchantToRegistryRequest,
-  GetMerchantsRequest,
   Merchant,
   MerchantWithRegistry,
   UpdateMerchantRegistryRequest,
 } from '@guesense-dash/shared';
 import { inject, injectable } from 'inversify';
 import { DatabasePort } from '../../../infrastructure/adapters/database/DatabasePort';
-import { DI_TYPES } from '../../../shared/types/container';
+import { CommonParams, DI_TYPES } from '../../../shared';
 import { IMerchantRepository } from '../interfaces';
 
 @injectable()
 export class MerchantRepository implements IMerchantRepository {
   constructor(@inject(DI_TYPES.Database) private database: DatabasePort) {}
 
-  async getAvailableMerchants(params: GetMerchantsRequest = {}): Promise<Merchant[]> {
-    const { search, limit = 10, offset = 0 } = params;
+  async getAvailableMerchants(params: CommonParams = {}): Promise<Merchant[]> {
+    const { search, limit = 5, offset = 0 } = params;
 
     let query = `
       SELECT m.id, m.name, m.goapotik_merchant_code as merchant_code
@@ -39,7 +38,7 @@ export class MerchantRepository implements IMerchantRepository {
     return await this.database.query<Merchant[]>(query, queryParams);
   }
 
-  async getRegisteredIndividualMerchants(params: GetMerchantsRequest = {}): Promise<MerchantWithRegistry[]> {
+  async getRegisteredIndividualMerchants(params: CommonParams = {}): Promise<MerchantWithRegistry[]> {
     const { search, status, limit = 9, offset = 0 } = params;
 
     let query = `
@@ -59,7 +58,7 @@ export class MerchantRepository implements IMerchantRepository {
     }
 
     if (status) {
-      query += ` AND mg.status = ?`;
+      query += ` AND mgm.status = ?`;
       queryParams.push(status);
     }
 
@@ -74,7 +73,7 @@ export class MerchantRepository implements IMerchantRepository {
       group_id: params.group_id || null,
       merchant_id: params.merchant_id,
       merchant_code: params.merchant_code,
-      is_merchant_source: params.is_merchant_source || false,
+      is_merchant_source: false,
     });
 
     return member.id;
