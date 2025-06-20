@@ -11,5 +11,5 @@ export const DI_TYPES = {
   AuthController: Symbol.for('AuthController'),
 
   // Database
-  DatabasePort: Symbol.for('DatabasePort'),
+  Database: Symbol.for('Database'),
 } as const;

@@ -3,6 +3,7 @@
 import { Container } from 'inversify';
 
 // Auth Module
+import { DatabasePort, TypeORMAdapter } from 'server/src/infrastructure';
 import {
   AuthController,
   AuthMiddleware,
@@ -27,7 +28,8 @@ export class ServiceBindings {
     container.bind<AuthMiddleware>(DI_TYPES.AuthMiddleware).to(AuthMiddleware).inSingletonScope();
   }
 
-  static bindExternalServices(_container: Container): void {
-    // Will be implemented later
+  static bindExternalServices(container: Container): void {
+    // Database
+    container.bind<DatabasePort>(DI_TYPES.Database).to(TypeORMAdapter).inSingletonScope();
   }
 }

@@ -13,5 +13,5 @@ export { HttpClientFactory } from './factories';
 export { DatabaseFactory } from './factories/DatabaseFactory';
 
 // Config
-export { getDatabaseConfig, getTypeORMConfig } from './config/database';
+export { getDatabaseConfig } from './config/database';
 export { getEnvironmentConfig } from './config/environment';

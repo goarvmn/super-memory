@@ -1,128 +1,91 @@
 // server/src/infrastructure/adapters/database/TypeORMAdapter.ts
 
+import { injectable } from 'inversify';
 import { DataSource } from 'typeorm';
-import { getTypeORMConfig } from '../../config/database';
+import { getTypeORMConfig } from '../../config/typeorm';
 import { DatabasePort } from './DatabasePort';
 import { DatabaseTransaction } from './DatabaseTransaction';
 import { TypeORMTransaction } from './TypeORMTransaction';
 
-/**
- * TypeORM implementation of DatabasePort
- */
+@injectable()
 export class TypeORMAdapter implements DatabasePort {
   private dataSource: DataSource;
-  private isInitialized: boolean = false;
 
   constructor() {
     this.dataSource = new DataSource(getTypeORMConfig());
   }
 
-  /**
-   * Initialize database connection
-   */
   async initialize(): Promise<void> {
-    try {
-      if (!this.isInitialized) {
-        await this.dataSource.initialize();
-        this.isInitialized = true;
-      }
-    } catch (error) {
-      console.error('Database connection failed:', error);
-      throw new Error(`Database initialization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    if (!this.dataSource.isInitialized) {
+      await this.dataSource.initialize();
     }
   }
 
-  /**
-   * Close database connection
-   */
   async destroy(): Promise<void> {
-    try {
-      if (this.isInitialized && this.dataSource.isInitialized) {
-        await this.dataSource.destroy();
-        this.isInitialized = false;
-      }
-    } catch (error) {
-      console.error('Database connection close failed:', error);
-      throw error;
+    if (this.dataSource.isInitialized) {
+      await this.dataSource.destroy();
     }
   }
 
-  /**
-   * Check if database is connected
-   */
   isConnected(): boolean {
-    return this.isInitialized && this.dataSource.isInitialized;
+    return this.dataSource.isInitialized;
   }
 
-  /**
-   * Run database migrations
-   */
   async runMigrations(): Promise<void> {
-    try {
-      if (!this.isConnected()) {
-        throw new Error('Database not connected. Call initialize() first.');
-      }
-
-      await this.dataSource.runMigrations();
-      console.log('Database migrations completed successfully');
-    } catch (error) {
-      console.error('Database migrations failed:', error);
-      throw error;
-    }
+    await this.dataSource.runMigrations();
   }
 
-  /**
-   * Revert last migration
-   */
   async undoLastMigration(): Promise<void> {
-    try {
-      if (!this.isConnected()) {
-        throw new Error('Database not connected. Call initialize() first.');
-      }
-
-      await this.dataSource.undoLastMigration();
-      console.log('Last migration reverted successfully');
-    } catch (error) {
-      console.error('Migration revert failed:', error);
-      throw error;
-    }
+    await this.dataSource.undoLastMigration();
   }
 
-  /**
-   * Execute raw query
-   */
   async query<T = any>(sql: string, parameters?: any[]): Promise<T> {
-    try {
-      if (!this.isConnected()) {
-        throw new Error('Database not connected. Call initialize() first.');
-      }
-
-      return await this.dataSource.query(sql, parameters);
-    } catch (error) {
-      console.error('Database query failed:', error);
-      throw error;
-    }
+    return await this.dataSource.query(sql, parameters);
   }
 
-  /**
-   * Start database transaction
-   */
   async startTransaction(): Promise<DatabaseTransaction> {
-    try {
-      if (!this.isConnected()) {
-        throw new Error('Database not connected. Call initialize() first.');
-      }
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
 
-      const queryRunner = this.dataSource.createQueryRunner();
-      await queryRunner.connect();
+    const transaction = new TypeORMTransaction(queryRunner);
+    await transaction.start();
 
-      const transaction = new TypeORMTransaction(queryRunner);
-      await transaction.start();
+    return transaction;
+  }
 
-      return transaction;
-    } catch (error) {
-      console.error('Transaction start failed:', error);
-      throw error;
-    }
+  async create<T>(tbl_name: string, data: Partial<T>): Promise<T> {
+    const repository = this.dataSource.getRepository(tbl_name);
+    const entity = repository.create(data as any);
+    const saved = await repository.save(entity);
+    return saved as T;
+  }
+
+  async update<T>(tbl_name: string, where: any, data: Partial<T>): Promise<void> {
+    const repository = this.dataSource.getRepository(tbl_name);
+    await repository.update(where, data as any);
+  }
+
+  async delete(tbl_name: string, where: any): Promise<void> {
+    const repository = this.dataSource.getRepository(tbl_name);
+    await repository.delete(where);
+  }
+
+  async findOne<T>(tbl_name: string, where: any): Promise<T | null> {
+    const repository = this.dataSource.getRepository(tbl_name);
+    const result = await repository.findOne({ where });
+    return result as T | null;
+  }
+
+  async findMany<T>(tbl_name: string, where?: any, options?: any): Promise<T[]> {
+    const repository = this.dataSource.getRepository(tbl_name);
+
+    const findOptions: any = {};
+    if (where) findOptions.where = where;
+    if (options?.limit) findOptions.take = options.limit;
+    if (options?.offset) findOptions.skip = options.offset;
+    if (options?.order) findOptions.order = options.order;
+
+    const results = await repository.find(findOptions);
+    return results as T[];
   }
 }

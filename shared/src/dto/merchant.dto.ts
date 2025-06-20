@@ -1,55 +1,42 @@
 // shared/src/dto/merchant.dto.ts
 
-import { MerchantWithSync, SyncOperationResult } from '../types/merchant.types';
-
-/**
- * Get Merchants Request
- */
 export interface GetMerchantsRequest {
   search?: string;
-  status?: 'active' | 'inactive';
-  page?: number;
+  status?: number;
   limit?: number;
+  offset?: number;
 }
 
-/**
- * Get Merchants Response
- */
-export interface GetMerchantsResponse {
-  merchants: MerchantWithSync[];
-  total_count: number;
-  page: number;
-  limit: number;
+export interface AddMerchantToRegistryRequest {
+  merchant_id: number;
+  merchant_code: string;
+  group_id?: number | null;
+  is_merchant_source?: boolean;
 }
 
-/**
- * Sync Merchant Request
- */
-export interface SyncMerchantRequest {
-  merchant_id: string;
+export interface UpdateMerchantRegistryRequest {
+  registry_id: number;
+  group_id?: number | null;
+  status?: boolean;
+  is_merchant_source?: boolean;
 }
 
-/**
- * Sync Merchant Response
- */
-export interface SyncMerchantResponse extends SyncOperationResult {
-  // Inherits all fields from SyncOperationResult
+export interface GetGroupsRequest {
+  search?: string;
+  status?: number;
+  limit?: number;
+  offset?: number;
 }
 
-/**
- * Update Merchant Request
- */
-export interface UpdateMerchantRequest {
-  status?: 'active' | 'inactive';
-  // Future fields can be added here
+export interface CreateGroupRequest {
+  name: string;
+  status?: number;
+  merchant_source_id?: number | null;
 }
 
-/**
- * Update Merchant Response
- */
-export interface UpdateMerchantResponse {
-  success: boolean;
-  merchant_id: string;
-  updated_fields: string[];
-  message: string;
+export interface UpdateGroupRequest {
+  id: number;
+  name?: string;
+  status?: number;
+  merchant_source_id?: number | null;
 }

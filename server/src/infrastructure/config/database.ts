@@ -1,5 +1,4 @@
-import { getEntityPaths, getMigrationPaths, getSubscriberPaths } from 'server/src/shared';
-import { DataSourceOptions } from 'typeorm';
+// server/src/infrastructure/config/database.ts
 
 /**
  * Database Configuration Interface
@@ -28,31 +27,5 @@ export function getDatabaseConfig(): DatabaseConfig {
     synchronize: false, // always false, no need need to sync schema even in development
     logging: process.env.NODE_ENV === 'development',
     ssl: process.env.DB_SSL === 'true',
-  };
-}
-
-/**
- * Get TypeORM DataSource options
- */
-export function getTypeORMConfig(): DataSourceOptions {
-  const config = getDatabaseConfig();
-
-  return {
-    type: 'mysql',
-    host: config.host,
-    port: config.port,
-    username: config.username,
-    password: config.password,
-    database: config.database,
-    synchronize: config.synchronize,
-    logging: config.logging,
-    entities: getEntityPaths(),
-    migrations: getMigrationPaths(),
-    subscribers: getSubscriberPaths(),
-    ssl: config.ssl ? { rejectUnauthorized: false } : false,
-    cache: {
-      type: 'database',
-      tableName: 'query_result_cache',
-    },
   };
 }
