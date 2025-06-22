@@ -16,8 +16,12 @@ import { RouteBootstrap } from './routes';
 export class ApplicationBootstrap {
   private app: express.Application;
   private container: Container;
-  private databaseBootstrap: DatabaseBootstrap;
   private isInitialized: boolean = false;
+
+  // Lazy-load database bootstrap
+  private get databaseBootstrap(): DatabaseBootstrap {
+    return this.container.get<DatabaseBootstrap>(DI_TYPES.DatabaseBootstrap);
+  }
 
   constructor() {
     this.app = express();
@@ -25,9 +29,6 @@ export class ApplicationBootstrap {
     // Setup DI container
     this.container = new Container();
     ServiceBindings.bindAll(this.container);
-
-    // Get DatabaseBootstrap from container
-    this.databaseBootstrap = this.container.get<DatabaseBootstrap>(DI_TYPES.DatabaseBootstrap);
   }
 
   /**
@@ -38,19 +39,30 @@ export class ApplicationBootstrap {
       return;
     }
 
-    // Initialize database
-    await this.databaseBootstrap.initialize();
+    try {
+      console.log('Initializing Application...');
 
-    // Setup middleware
-    new MiddlewareBootstrap(this.container).setupAll(this.app);
+      // initialize database connection
+      await this.databaseBootstrap.initialize();
 
-    // Setup routes (DI container injected)
-    new RouteBootstrap(this.container).setup(this.app);
+      // setup middleware
+      const middlewareBootstrap = new MiddlewareBootstrap(this.container);
+      middlewareBootstrap.setupAll(this.app);
 
-    // Setup error handling
-    new ErrorBootstrap().setup(this.app);
+      // setup routes with DI container injected
+      const routeBootstrap = new RouteBootstrap(this.container);
+      routeBootstrap.setup(this.app);
 
-    this.isInitialized = true;
+      // etup error handling
+      const errorBootstrap = new ErrorBootstrap();
+      errorBootstrap.setup(this.app);
+
+      this.isInitialized = true;
+      console.log('Application initialized successfully');
+    } catch (error) {
+      console.error('Application initialization failed:', error);
+      throw error;
+    }
   }
 
   /**
@@ -78,9 +90,17 @@ export class ApplicationBootstrap {
    * Graceful shutdown
    */
   async shutdown(): Promise<void> {
-    if (this.isInitialized) {
+    try {
+      console.log('🔄 Shutting down application...');
+
+      // Shutdown database connections
       await this.databaseBootstrap.shutdown();
+
       this.isInitialized = false;
+      console.log('✅ Application shutdown completed');
+    } catch (error) {
+      console.error('❌ Error during shutdown:', error);
+      throw error;
     }
   }
 
