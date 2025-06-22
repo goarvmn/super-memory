@@ -3,6 +3,7 @@
 import cors from 'cors';
 import express from 'express';
 import helmet from 'helmet';
+import { Container } from 'inversify';
 import { getEnvironmentConfig } from '../../infrastructure/config/environment';
 
 /**
@@ -11,7 +12,7 @@ import { getEnvironmentConfig } from '../../infrastructure/config/environment';
 export class MiddlewareBootstrap {
   private env: ReturnType<typeof getEnvironmentConfig>;
 
-  constructor() {
+  constructor(private container: Container) {
     this.env = getEnvironmentConfig();
   }
 

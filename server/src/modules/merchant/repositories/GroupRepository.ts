@@ -289,11 +289,11 @@ export class GroupRepository implements IGroupRepository {
     const query = `
       SELECT 
         mgm.id, mgm.group_id, mgm.merchant_id, mgm.merchant_code, mgm.is_merchant_source,
-        m.name as merchant_name, m.status as merchant_status
+        m.merchant_name, m.status as merchant_status
       FROM merchant_group_members mgm
       INNER JOIN merchants m ON mgm.merchant_id = m.id
       WHERE mgm.group_id = ? AND mgm.status = 1 AND m.status = 1
-      ORDER BY mgm.is_merchant_source DESC, m.name ASC
+      ORDER BY mgm.is_merchant_source DESC, m.merchant_name ASC
     `;
 
     return await this.database.query<GroupMember[]>(query, [groupId]);
