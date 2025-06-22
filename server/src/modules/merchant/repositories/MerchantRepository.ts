@@ -15,6 +15,10 @@ import { IMerchantRepository } from '../interfaces';
 export class MerchantRepository implements IMerchantRepository {
   constructor(@inject(DI_TYPES.Database) private database: DatabasePort) {}
 
+  /**
+   * Get available merchants
+   * Bussiness logic: get all active merchants from table `merchants` and filter out merchants that are already registered in the registry
+   */
   async getAvailableMerchants(params: CommonParams = {}): Promise<Merchant[]> {
     const { search, limit, offset } = params;
 
@@ -38,6 +42,10 @@ export class MerchantRepository implements IMerchantRepository {
     return await this.database.query<Merchant[]>(query, queryParams);
   }
 
+  /**
+   * Get registered merchants
+   * Bussiness logic: get all merchants from `merchant_group_members` and filter out merchants that are not registered in the registry
+   */
   async getRegisteredMerchants(params: CommonParams = {}): Promise<MerchantWithRegistry[]> {
     const { search, status, limit, offset } = params;
 
@@ -68,6 +76,10 @@ export class MerchantRepository implements IMerchantRepository {
     return await this.database.query<MerchantWithRegistry[]>(query, queryParams);
   }
 
+  /**
+   * Add merchant to registry
+   * Bussiness logic: add merchant to `merchant_group_members`
+   */
   async addMerchantToRegistry(params: AddMerchantToRegistryRequest): Promise<number> {
     const member = await this.database.create<any>('merchant_group_members', {
       group_id: null, // by default, set to null to indicate individual merchant
@@ -79,21 +91,37 @@ export class MerchantRepository implements IMerchantRepository {
     return member.id;
   }
 
+  /**
+   * Update merchant in registry
+   * Bussiness logic: update merchant from `merchant_group_members`
+   */
   async updateMerchantInRegistry(params: UpdateMerchantRegistryRequest): Promise<void> {
     const { registry_id, ...updateData } = params;
 
     await this.database.update('merchant_group_members', { id: registry_id }, updateData);
   }
 
+  /**
+   * Remove merchant from registry
+   * Bussiness logic: remove merchant from `merchant_group_members`
+   */
   async removeMerchantFromRegistry(registryId: number): Promise<void> {
     await this.database.delete('merchant_group_members', { id: registryId });
   }
 
+  /**
+   * Check if merchant is registered
+   * Bussiness logic: check if merchant is registered in `merchant_group_members`
+   */
   async isMerchantRegistered(merchantId: number): Promise<boolean> {
     const result = await this.database.findOne('merchant_group_members', { merchant_id: merchantId });
     return !!result;
   }
 
+  /**
+   * Get reigistered merchants count
+   * Bussiness logic: get count of registered merchants
+   */
   async getRegisteredMerchantsCount(params: CommonParams = {}): Promise<number> {
     const { search, status } = params;
 

@@ -23,6 +23,7 @@ export class MerchantService implements IMerchantService {
 
   /**
    * Get available merchants
+   * Bussiness logic: get all merchants that are not registered in the registry
    */
   async getAvailableMerchants(params?: CommonParams): Promise<Merchant[]> {
     try {
@@ -41,6 +42,7 @@ export class MerchantService implements IMerchantService {
 
   /**
    * Get registered merchants
+   * Bussiness logic: get all merchants that are registered in the registry
    */
   async getRegisteredMerchants(params?: CommonParams): Promise<GetMerchantsResponse> {
     try {
@@ -78,6 +80,7 @@ export class MerchantService implements IMerchantService {
 
   /**
    * Add merchants to registry
+   * Bussiness logic: add merchant(s) to registry
    */
   async addMerchantToRegistry(params: AddMerchantToRegistryRequest[]): Promise<AddMerchantToRegistryResponse> {
     try {
@@ -103,6 +106,7 @@ export class MerchantService implements IMerchantService {
             continue;
           }
 
+          // check if merchant is already registered
           const isAlreadyRegistered = await this.merchantRepository.isMerchantRegistered(merchant.merchant_id);
           if (isAlreadyRegistered) {
             result.failed.push({
@@ -132,10 +136,11 @@ export class MerchantService implements IMerchantService {
 
   /**
    * Update merchant registry
+   * Bussiness logic: update merchant in registry
    */
   async updateMerchantRegistry(params: UpdateMerchantRegistryRequest): Promise<void> {
     try {
-      // Validate required fields
+      // validate required fields
       if (!params.registry_id) {
         throw new Error('Registry ID is required');
       }
@@ -149,6 +154,7 @@ export class MerchantService implements IMerchantService {
 
   /**
    * Remove merchant from registry
+   * Bussiness logic: remove merchant from registry
    */
   async removeMerchantFromRegistry(registryId: number): Promise<void> {
     try {
