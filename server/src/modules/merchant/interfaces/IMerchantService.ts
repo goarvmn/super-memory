@@ -21,7 +21,7 @@ export interface IMerchantService {
 
   /**
    * Get registered merchants
-   * Bussiness logic: get all merchants that are registered in the registry
+   * Bussiness logic: get all merchants that are registered in the registry with pagination
    */
   getRegisteredMerchants(params?: CommonParams): Promise<GetMerchantsResponse>;
 

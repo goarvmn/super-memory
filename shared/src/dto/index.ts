@@ -10,6 +10,7 @@ export type { LoginRequest, LoginResponse, ValidateSessionResponse } from './aut
 export type {
   AddMerchantToRegistryRequest,
   AddMerchantToRegistryResponse,
+  BulkAddMerchantsResponse,
   CreateGroupRequest,
   CreateGroupResponse,
   GetGroupsRequest,

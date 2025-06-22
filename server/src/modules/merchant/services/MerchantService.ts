@@ -42,7 +42,7 @@ export class MerchantService implements IMerchantService {
 
   /**
    * Get registered merchants
-   * Bussiness logic: get all merchants that are registered in the registry
+   * Bussiness logic: get all merchants that are registered in the registry with pagination
    */
   async getRegisteredMerchants(params?: CommonParams): Promise<GetMerchantsResponse> {
     try {

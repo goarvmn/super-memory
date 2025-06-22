@@ -71,3 +71,12 @@ export interface UpdateGroupRequest {
   status?: number;
   merchant_source_id?: number | null;
 }
+
+export interface BulkAddMerchantsResponse {
+  successCount: number;
+  totalCount: number;
+  failed: Array<{
+    merchant_id: number;
+    error: string;
+  }>;
+}
