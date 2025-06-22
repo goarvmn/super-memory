@@ -1,12 +1,12 @@
 // server/src/application/bootstrap/routes.ts
 
-import { AUTH_ENDPOINTS, BaseApiResponse, GROUP_ENDPOINTS, MERCHANT_ENDPOINTS } from '@guesense-dash/shared';
+import { AUTH_ENDPOINTS, GROUP_ENDPOINTS, MERCHANT_ENDPOINTS } from '@guesense-dash/shared';
 import express from 'express';
+import { Container } from 'inversify';
 import { getEnvironmentConfig } from '../../infrastructure/config/environment';
 import type { AuthController, AuthMiddleware } from '../../modules/auth';
 import type { GroupController, MerchantController } from '../../modules/merchant';
 import { DI_TYPES } from '../../shared';
-import { container } from '../container';
 
 /**
  * Route Bootstrap Handler
@@ -18,12 +18,13 @@ export class RouteBootstrap {
   private merchantController: MerchantController;
   private groupController: GroupController;
 
-  constructor() {
+  constructor(private container: Container) {
     this.env = getEnvironmentConfig();
-    this.authController = container.get<AuthController>(DI_TYPES.AuthController);
-    this.authMiddleware = container.get<AuthMiddleware>(DI_TYPES.AuthMiddleware);
-    this.merchantController = container.get<MerchantController>(DI_TYPES.MerchantController);
-    this.groupController = container.get<GroupController>(DI_TYPES.GroupController);
+
+    this.authController = this.container.get<AuthController>(DI_TYPES.AuthController);
+    this.authMiddleware = this.container.get<AuthMiddleware>(DI_TYPES.AuthMiddleware);
+    this.merchantController = this.container.get<MerchantController>(DI_TYPES.MerchantController);
+    this.groupController = this.container.get<GroupController>(DI_TYPES.GroupController);
   }
 
   private setupHealthRoutes(app: express.Application): void {
@@ -107,22 +108,8 @@ export class RouteBootstrap {
     app.use('/api', apiRouter);
   }
 
-  private setup404Handler(app: express.Application): void {
-    app.use((req, res) => {
-      res.status(404).json({
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Route ${req.method} ${req.originalUrl} not found`,
-        },
-        timestamp: new Date().toISOString(),
-      } as BaseApiResponse<never>);
-    });
-  }
-
   setup(app: express.Application): void {
     this.setupHealthRoutes(app);
     this.setupApiRoutes(app);
-    this.setup404Handler(app);
   }
 }

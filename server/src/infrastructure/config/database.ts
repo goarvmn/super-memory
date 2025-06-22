@@ -25,7 +25,7 @@ export function getDatabaseConfig(): DatabaseConfig {
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_DATABASE || 'guesense_dashboard',
     synchronize: false, // always false, no need need to sync schema even in development
-    logging: process.env.NODE_ENV === 'development',
+    logging: false, // disable db logging in staging and production
     ssl: process.env.DB_SSL === 'true',
   };
 }
