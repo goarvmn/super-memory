@@ -3,7 +3,7 @@
 import {
   AddMerchantToRegistryRequest,
   CreateGroupRequest,
-  GroupCreationResult,
+  CreateGroupResponse,
   GroupMember,
   GroupSummary,
   GroupWithMembers,
@@ -184,12 +184,12 @@ export class GroupRepository implements IGroupRepository {
     groupData: CreateGroupRequest,
     members: AddMerchantToRegistryRequest[],
     merchantSourceId?: number
-  ): Promise<GroupCreationResult> {
+  ): Promise<CreateGroupResponse> {
     // start database transaction
     const transaction = await this.database.startTransaction();
 
     try {
-      const result: GroupCreationResult = {
+      const result: CreateGroupResponse = {
         groupId: 0,
         groupName: groupData.name,
         membersSuccessCount: 0,
@@ -271,5 +271,30 @@ export class GroupRepository implements IGroupRepository {
       const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
       throw new Error(`Create group with members atomic operation failed: ${errorMessage}`);
     }
+  }
+
+  async getAllGroupsCount(params: CommonParams = {}): Promise<number> {
+    const { search, status } = params;
+
+    let query = `
+      SELECT COUNT(g.id) as total
+      FROM merchant_groups g
+      WHERE g.status = 1
+    `;
+
+    const queryParams: any[] = [];
+
+    if (search) {
+      query += ` AND g.name LIKE ?`;
+      queryParams.push(`%${search}%`);
+    }
+
+    if (status !== undefined) {
+      query += ` AND g.status = ?`;
+      queryParams.push(status);
+    }
+
+    const result = await this.database.query(query, queryParams);
+    return result[0]?.total || 0;
   }
 }

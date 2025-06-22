@@ -2,9 +2,9 @@
 
 import {
   AddMerchantToRegistryRequest,
-  BulkAddResult,
+  AddMerchantToRegistryResponse,
+  GetMerchantsResponse,
   Merchant,
-  MerchantWithRegistry,
   UpdateMerchantRegistryRequest,
 } from '@guesense-dash/shared';
 import { inject, injectable } from 'inversify';
@@ -42,15 +42,34 @@ export class MerchantService implements IMerchantService {
   /**
    * Get list of (registered) merchants
    */
-  async getRegisteredIndividualMerchants(params?: CommonParams): Promise<MerchantWithRegistry[]> {
+  async getRegisteredIndividualMerchants(params?: CommonParams): Promise<GetMerchantsResponse> {
     try {
+      const limit = params?.limit ?? 9;
+      const offset = params?.offset ?? 0;
+
       const defaultParams: CommonParams = {
-        limit: params?.limit || 9,
-        offset: params?.offset || 0,
+        limit: limit,
+        offset: offset,
         ...params,
       };
 
-      return await this.merchantRepository.getRegisteredIndividualMerchants(defaultParams);
+      const merchants = await this.merchantRepository.getRegisteredIndividualMerchants(defaultParams);
+
+      const total = await this.merchantRepository.getRegisteredMerchantsCount(defaultParams);
+
+      const currentPage = Math.floor(offset / limit) + 1;
+      const totalPages = Math.ceil(total / limit);
+      const hasNextPage = currentPage < totalPages;
+
+      return {
+        merchants,
+        pagination: {
+          total,
+          totalPages,
+          currentPage,
+          hasNextPage,
+        },
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to get registered merchants';
       throw new Error(`Get registered merchants failed: ${errorMessage}`);
@@ -60,14 +79,14 @@ export class MerchantService implements IMerchantService {
   /**
    * Add merchants to registry
    */
-  async addMerchantToRegistry(params: AddMerchantToRegistryRequest[]): Promise<BulkAddResult> {
+  async addMerchantToRegistry(params: AddMerchantToRegistryRequest[]): Promise<AddMerchantToRegistryResponse> {
     try {
       // validate input
       if (!Array.isArray(params) || params.length === 0) {
         throw new Error('At least one merchant is required');
       }
 
-      const result: BulkAddResult = {
+      const result: AddMerchantToRegistryResponse = {
         successCount: 0,
         totalCount: params.length,
         failed: [],

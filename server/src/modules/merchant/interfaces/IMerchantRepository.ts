@@ -38,4 +38,9 @@ export interface IMerchantRepository {
    * Check if merchant is registered
    */
   isMerchantRegistered(merchantId: number): Promise<boolean>;
+
+  /**
+   * Get reigistered merchants count
+   */
+  getRegisteredMerchantsCount(params: CommonParams): Promise<number>;
 }

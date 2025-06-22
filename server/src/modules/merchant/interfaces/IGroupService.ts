@@ -3,8 +3,8 @@
 import {
   AddMerchantToRegistryRequest,
   CreateGroupRequest,
-  GroupCreationResult,
-  GroupSummary,
+  CreateGroupResponse,
+  GetGroupsResponse,
   GroupWithMembers,
   UpdateGroupRequest,
 } from '@guesense-dash/shared';
@@ -18,7 +18,7 @@ export interface IGroupService {
   /**
    * Get all groups
    */
-  getAllGroups(params?: CommonParams): Promise<GroupSummary[]>;
+  getAllGroups(params?: CommonParams): Promise<GetGroupsResponse>;
 
   /**
    * Get group detail with members
@@ -57,5 +57,5 @@ export interface IGroupService {
     groupData: CreateGroupRequest,
     members: AddMerchantToRegistryRequest[],
     merchantSourceId?: number
-  ): Promise<GroupCreationResult>;
+  ): Promise<CreateGroupResponse>;
 }

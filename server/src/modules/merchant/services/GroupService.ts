@@ -3,8 +3,8 @@
 import {
   AddMerchantToRegistryRequest,
   CreateGroupRequest,
-  GroupCreationResult,
-  GroupSummary,
+  CreateGroupResponse,
+  GetGroupsResponse,
   GroupWithMembers,
   UpdateGroupRequest,
 } from '@guesense-dash/shared';
@@ -28,15 +28,32 @@ export class GroupService implements IGroupService {
   /**
    * Get all groups for "Groups" tab
    */
-  async getAllGroups(params?: CommonParams): Promise<GroupSummary[]> {
+  async getAllGroups(params?: CommonParams): Promise<GetGroupsResponse> {
     try {
+      const offset = params?.offset ?? 0;
+      const limit = params?.limit ?? 6;
       const defaultParams: CommonParams = {
-        limit: 6,
-        offset: 0,
+        limit: limit,
+        offset: offset,
         ...params,
       };
 
-      return await this.groupRepository.getAllGroups(defaultParams);
+      const groups = await this.groupRepository.getAllGroups(defaultParams);
+      const total = await this.groupRepository.getAllGroupsCount(params);
+
+      const currentPage = Math.floor(offset / limit) + 1;
+      const totalPages = Math.ceil(total / limit);
+      const hasNextPage = currentPage < totalPages;
+
+      return {
+        groups,
+        pagination: {
+          total,
+          totalPages,
+          currentPage,
+          hasNextPage,
+        },
+      };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to get groups';
       throw new Error(`Get groups failed: ${errorMessage}`);
@@ -76,7 +93,7 @@ export class GroupService implements IGroupService {
     groupData: CreateGroupRequest,
     members: AddMerchantToRegistryRequest[],
     merchantSourceId?: number
-  ): Promise<GroupCreationResult> {
+  ): Promise<CreateGroupResponse> {
     try {
       // Validate group data
       if (!groupData.name?.trim()) {

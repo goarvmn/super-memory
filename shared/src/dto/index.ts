@@ -9,11 +9,13 @@ export type { LoginRequest, LoginResponse, ValidateSessionResponse } from './aut
 // Export merchant DTOs
 export type {
   AddMerchantToRegistryRequest,
-  BulkAddResult,
+  AddMerchantToRegistryResponse,
   CreateGroupRequest,
+  CreateGroupResponse,
   GetGroupsRequest,
+  GetGroupsResponse,
   GetMerchantsRequest,
-  GroupCreationResult,
+  GetMerchantsResponse,
   UpdateGroupRequest,
   UpdateMerchantRegistryRequest,
 } from './merchant.dto';
