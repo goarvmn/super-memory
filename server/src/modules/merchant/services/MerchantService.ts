@@ -27,8 +27,8 @@ export class MerchantService implements IMerchantService {
   async getAvailableMerchants(params?: CommonParams): Promise<Merchant[]> {
     try {
       const defaultParams: CommonParams = {
-        limit: params?.limit || 5,
-        offset: params?.offset || 0,
+        limit: params?.limit ?? 5,
+        offset: params?.offset ?? 0,
         ...params,
       };
 
@@ -40,9 +40,9 @@ export class MerchantService implements IMerchantService {
   }
 
   /**
-   * Get list of (registered) merchants
+   * Get registered merchants
    */
-  async getRegisteredIndividualMerchants(params?: CommonParams): Promise<GetMerchantsResponse> {
+  async getRegisteredMerchants(params?: CommonParams): Promise<GetMerchantsResponse> {
     try {
       const limit = params?.limit ?? 9;
       const offset = params?.offset ?? 0;
@@ -53,7 +53,7 @@ export class MerchantService implements IMerchantService {
         ...params,
       };
 
-      const merchants = await this.merchantRepository.getRegisteredIndividualMerchants(defaultParams);
+      const merchants = await this.merchantRepository.getRegisteredMerchants(defaultParams);
 
       const total = await this.merchantRepository.getRegisteredMerchantsCount(defaultParams);
 

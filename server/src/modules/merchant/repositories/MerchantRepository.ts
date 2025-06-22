@@ -16,7 +16,7 @@ export class MerchantRepository implements IMerchantRepository {
   constructor(@inject(DI_TYPES.Database) private database: DatabasePort) {}
 
   async getAvailableMerchants(params: CommonParams = {}): Promise<Merchant[]> {
-    const { search, limit = 5, offset = 0 } = params;
+    const { search, limit, offset } = params;
 
     let query = `
       SELECT m.id, m.name, m.goapotik_merchant_code as merchant_code
@@ -38,8 +38,8 @@ export class MerchantRepository implements IMerchantRepository {
     return await this.database.query<Merchant[]>(query, queryParams);
   }
 
-  async getRegisteredIndividualMerchants(params: CommonParams = {}): Promise<MerchantWithRegistry[]> {
-    const { search, status, limit = 9, offset = 0 } = params;
+  async getRegisteredMerchants(params: CommonParams = {}): Promise<MerchantWithRegistry[]> {
+    const { search, status, limit, offset } = params;
 
     let query = `
       SELECT 

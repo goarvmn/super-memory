@@ -19,9 +19,9 @@ export interface IMerchantService {
   getAvailableMerchants(params?: CommonParams): Promise<Merchant[]>;
 
   /**
-   * Get list of (registered) merchants
+   * Get registered merchants
    */
-  getRegisteredIndividualMerchants(params?: CommonParams): Promise<GetMerchantsResponse>;
+  getRegisteredMerchants(params?: CommonParams): Promise<GetMerchantsResponse>;
 
   /**
    * Add merchant to registry
