@@ -1,7 +1,9 @@
 // server/src/modules/merchant/interfaces/IGroupRepository.ts
 
 import {
+  AddMerchantToRegistryRequest,
   CreateGroupRequest,
+  GroupCreationResult,
   GroupMember,
   GroupSummary,
   GroupWithMembers,
@@ -21,9 +23,13 @@ export interface IGroupRepository {
   getGroupWithMembers(groupId: number): Promise<GroupWithMembers | null>;
 
   /**
-   * Create new group
+   * create group with members (atomic transaction)
    */
-  createGroup(params: CreateGroupRequest): Promise<number>;
+  createGroupWithMembersAtomic(
+    groupData: CreateGroupRequest,
+    members: AddMerchantToRegistryRequest[],
+    merchantSourceId?: number
+  ): Promise<GroupCreationResult>;
 
   /**
    * Update group

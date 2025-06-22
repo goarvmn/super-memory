@@ -7,14 +7,12 @@ export interface GetMerchantsRequest extends PaginationRequest, StatusFilter, Se
 export interface AddMerchantToRegistryRequest {
   merchant_id: number;
   merchant_code: string;
-  group_id?: number;
 }
 
 export interface UpdateMerchantRegistryRequest {
   registry_id: number;
   group_id?: number | null;
   status?: boolean;
-  is_merchant_source?: boolean;
 }
 
 export interface GetGroupsRequest extends PaginationRequest, SearchFilter, StatusFilter {}
@@ -22,7 +20,6 @@ export interface GetGroupsRequest extends PaginationRequest, SearchFilter, Statu
 export interface CreateGroupRequest {
   name: string;
   status?: number;
-  merchant_source_id?: number | null;
 }
 
 export interface UpdateGroupRequest {
@@ -30,4 +27,26 @@ export interface UpdateGroupRequest {
   name?: string;
   status?: number;
   merchant_source_id?: number | null;
+}
+
+export interface BulkAddResult {
+  successCount: number;
+  totalCount: number;
+  failed: Array<{
+    merchant_id: number;
+    error: string;
+  }>;
+}
+
+export interface GroupCreationResult {
+  groupId: number;
+  groupName: string;
+  membersSuccessCount: number;
+  membersTotalCount: number;
+  membersFailed: Array<{
+    merchant_id: number;
+    error: string;
+  }>;
+  sourceSet: boolean;
+  sourceMerchantId?: number;
 }
