@@ -2,6 +2,7 @@
 
 import {
   AddMerchantToRegistryRequest,
+  BulkAddMerchantsResponse,
   CreateGroupRequest,
   CreateGroupResponse,
   GetGroupsResponse,
@@ -17,31 +18,47 @@ import { CommonParams } from 'server/src/shared';
 export interface IGroupService {
   /**
    * Get all groups
+   * Bussiness logic: get all groups with pagination
    */
   getAllGroups(params?: CommonParams): Promise<GetGroupsResponse>;
 
   /**
    * Get group detail with members
+   * Bussiness logic: get group detail with active members
    */
   getGroupWithMembers(groupId: number): Promise<GroupWithMembers>;
 
   /**
+   * Create new group with members
+   * Bussiness logic: create new group with members
+   */
+  createGroupWithMembers(
+    groupData: CreateGroupRequest,
+    members: AddMerchantToRegistryRequest[],
+    merchantSourceId?: number
+  ): Promise<CreateGroupResponse>;
+
+  /**
    * Update group
+   * Bussiness logic: update group information
    */
   updateGroup(params: UpdateGroupRequest): Promise<void>;
 
   /**
-   * Delete group (soft delete)
+   * Delete group
+   * Bussiness logic: remove group from list
    */
   deleteGroup(groupId: number): Promise<void>;
 
   /**
-   * Add member to group
+   * Add merchant(s) to group
+   * Bussiness logic: add merchant(s) to group with bulk operation
    */
-  addMemberToGroup(groupId: number, merchantId: number, merchantCode: string, isSource?: boolean): Promise<void>;
+  addMerchantsToGroup(groupId: number, merchants: AddMerchantToRegistryRequest[]): Promise<BulkAddMerchantsResponse>;
 
   /**
    * Remove member from group
+   * Bussiness logic: remove member from group
    */
   removeMemberFromGroup(groupId: number, merchantId: number): Promise<void>;
 
@@ -49,13 +66,4 @@ export interface IGroupService {
    * Set template source merchant
    */
   setTemplateSource(groupId: number, merchantId: number): Promise<void>;
-
-  /**
-   * Create new group with members (atomic operation)
-   */
-  createGroupWithMembers(
-    groupData: CreateGroupRequest,
-    members: AddMerchantToRegistryRequest[],
-    merchantSourceId?: number
-  ): Promise<CreateGroupResponse>;
 }

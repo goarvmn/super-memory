@@ -15,26 +15,31 @@ import { CommonParams } from 'server/src/shared';
 export interface IMerchantService {
   /**
    * Get available merchants
+   * Bussiness logic: get all merchants that are not registered in the registry
    */
   getAvailableMerchants(params?: CommonParams): Promise<Merchant[]>;
 
   /**
-   * Get list of (registered) merchants
+   * Get registered merchants
+   * Bussiness logic: get all merchants that are registered in the registry with pagination
    */
-  getRegisteredIndividualMerchants(params?: CommonParams): Promise<GetMerchantsResponse>;
+  getRegisteredMerchants(params?: CommonParams): Promise<GetMerchantsResponse>;
 
   /**
    * Add merchant to registry
+   * Bussiness logic: add merchant(s) to registry
    */
   addMerchantToRegistry(params: AddMerchantToRegistryRequest[]): Promise<AddMerchantToRegistryResponse>;
 
   /**
    * Update merchant registry
+   * Bussiness logic: update merchant in registry
    */
   updateMerchantRegistry(params: UpdateMerchantRegistryRequest): Promise<void>;
 
   /**
    * Remove merchant from registry
+   * Bussiness logic: remove merchant from registry
    */
   removeMerchantFromRegistry(registryId: number): Promise<void>;
 }

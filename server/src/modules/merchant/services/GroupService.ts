@@ -2,6 +2,7 @@
 
 import {
   AddMerchantToRegistryRequest,
+  BulkAddMerchantsResponse,
   CreateGroupRequest,
   CreateGroupResponse,
   GetGroupsResponse,
@@ -26,7 +27,8 @@ export class GroupService implements IGroupService {
   ) {}
 
   /**
-   * Get all groups for "Groups" tab
+   * Get all groups
+   * Bussiness logic: get all groups with pagination
    */
   async getAllGroups(params?: CommonParams): Promise<GetGroupsResponse> {
     try {
@@ -62,13 +64,16 @@ export class GroupService implements IGroupService {
 
   /**
    * Get group detail with members
+   * Bussiness logic: get group detail with active members
    */
   async getGroupWithMembers(groupId: number): Promise<GroupWithMembers> {
     try {
+      // validate inputs
       if (!groupId || groupId <= 0) {
         throw new Error('Valid group ID is required');
       }
 
+      // validate group exists
       const groupExists = await this.groupRepository.groupExists(groupId);
       if (!groupExists) {
         throw new Error(`Group ${groupId} not found`);
@@ -87,7 +92,8 @@ export class GroupService implements IGroupService {
   }
 
   /**
-   * Create group with members (atomic operation)
+   * Create new group with members
+   * Bussiness logic: create new group with members
    */
   async createGroupWithMembers(
     groupData: CreateGroupRequest,
@@ -138,7 +144,8 @@ export class GroupService implements IGroupService {
   }
 
   /**
-   * Update group information
+   * Update group
+   * Bussiness logic: update group information
    */
   async updateGroup(params: UpdateGroupRequest): Promise<void> {
     try {
@@ -164,6 +171,7 @@ export class GroupService implements IGroupService {
 
   /**
    * Delete group
+   * Bussiness logic: remove group from list
    */
   async deleteGroup(groupId: number): Promise<void> {
     try {
@@ -184,51 +192,87 @@ export class GroupService implements IGroupService {
   }
 
   /**
-   * Add merchant to group
+   * Add merchant(s) to group
+   * Bussiness logic: add merchant(s) to group with bulk operation
    */
-  async addMemberToGroup(groupId: number, merchantId: number, merchantCode: string, isSource?: boolean): Promise<void> {
+  async addMerchantsToGroup(
+    groupId: number,
+    merchants: AddMerchantToRegistryRequest[]
+  ): Promise<BulkAddMerchantsResponse> {
     try {
-      // Validate inputs
+      // validate inputs
       if (!groupId || groupId <= 0) {
         throw new Error('Valid group ID is required');
       }
-      if (!merchantId || merchantId <= 0) {
-        throw new Error('Valid merchant ID is required');
-      }
-      if (!merchantCode?.trim()) {
-        throw new Error('Merchant code is required');
+
+      if (!Array.isArray(merchants) || merchants.length === 0) {
+        throw new Error('At least one merchant is required');
       }
 
-      // Check if group exists
+      // check if group exists
       const groupExists = await this.groupRepository.groupExists(groupId);
       if (!groupExists) {
         throw new Error(`Group ${groupId} not found`);
       }
 
-      // Check if merchant is registered
-      const isRegistered = await this.merchantRepository.isMerchantRegistered(merchantId);
-      if (!isRegistered) {
-        throw new Error(`Merchant ${merchantId} is not registered`);
+      const result: BulkAddMerchantsResponse = {
+        successCount: 0,
+        totalCount: merchants.length,
+        failed: [],
+      };
+
+      for (const merchant of merchants) {
+        try {
+          // validate merchant data
+          if (!merchant.merchant_id || !merchant.merchant_code?.trim()) {
+            result.failed.push({
+              merchant_id: merchant.merchant_id || 0,
+              error: 'Merchant ID and code are required',
+            });
+            continue;
+          }
+
+          // check if merchant is already in this group
+          const isInGroup = await this.groupRepository.isMemberOfGroup(groupId, merchant.merchant_id);
+          if (isInGroup) {
+            result.failed.push({
+              merchant_id: merchant.merchant_id,
+              error: `Merchant ${merchant.merchant_id} is already in this group`,
+            });
+            continue;
+          }
+
+          // register merchant if not already registered
+          const isRegistered = await this.merchantRepository.isMerchantRegistered(merchant.merchant_id);
+          if (!isRegistered) {
+            await this.merchantRepository.addMerchantToRegistry(merchant);
+          }
+
+          await this.groupRepository.addMemberToGroup(groupId, merchant.merchant_id, merchant.merchant_code, false);
+          result.successCount++;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to process merchant';
+          result.failed.push({
+            merchant_id: merchant.merchant_id,
+            error: errorMessage,
+          });
+        }
       }
 
-      // Business logic: If setting as template source, unset previous source
-      if (isSource) {
-        await this.groupRepository.setTemplateSource(groupId, merchantId);
-      } else {
-        await this.groupRepository.addMemberToGroup(groupId, merchantId, merchantCode, false);
-      }
+      return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add member to group';
-      throw new Error(`Add member to group failed: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add merchants to group';
+      throw new Error(`Add merchants to group failed: ${errorMessage}`);
     }
   }
 
   /**
    * Remove member from group
+   * Bussiness logic: remove member from group
    */
   async removeMemberFromGroup(groupId: number, merchantId: number): Promise<void> {
     try {
-      // Validate inputs
+      // validate inputs
       if (!groupId || groupId <= 0) {
         throw new Error('Valid group ID is required');
       }
@@ -236,7 +280,7 @@ export class GroupService implements IGroupService {
         throw new Error('Valid merchant ID is required');
       }
 
-      // Check if group exists
+      // check if group exists
       const groupExists = await this.groupRepository.groupExists(groupId);
       if (!groupExists) {
         throw new Error(`Group ${groupId} not found`);
