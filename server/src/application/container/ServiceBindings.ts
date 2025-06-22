@@ -1,6 +1,18 @@
 // server/src/application/container/ServiceBindings.ts
 
 import { Container } from 'inversify';
+import {
+  GroupController,
+  GroupRepository,
+  GroupService,
+  IGroupRepository,
+  IGroupService,
+  IMerchantRepository,
+  IMerchantService,
+  MerchantController,
+  MerchantRepository,
+  MerchantService,
+} from 'server/src/modules/merchant';
 import { DatabasePort, TypeORMAdapter } from '../../infrastructure/adapters/database';
 import {
   AuthController,
@@ -28,13 +40,29 @@ export class ServiceBindings {
   }
 
   static bindAuth(container: Container): void {
-    // Auth Services
+    // Services
     container.bind<IAuthService>(DI_TYPES.IAuthService).to(AuthService).inSingletonScope();
     container.bind<ISessionStore>(DI_TYPES.ISessionStore).to(SessionService).inSingletonScope();
 
-    // Auth Controllers & Middleware
-    container.bind<AuthController>(DI_TYPES.AuthController).to(AuthController).inSingletonScope();
+    // Middleware
     container.bind<AuthMiddleware>(DI_TYPES.AuthMiddleware).to(AuthMiddleware).inSingletonScope();
+
+    // Controllers
+    container.bind<AuthController>(DI_TYPES.AuthController).to(AuthController).inSingletonScope();
+  }
+
+  static bindMerchant(container: Container): void {
+    // Repositories
+    container.bind<IMerchantRepository>(DI_TYPES.IMerchantRepository).to(MerchantRepository).inSingletonScope();
+    container.bind<IGroupRepository>(DI_TYPES.IGroupRepository).to(GroupRepository).inSingletonScope();
+
+    // Services
+    container.bind<IMerchantService>(DI_TYPES.IMerchantService).to(MerchantService).inSingletonScope();
+    container.bind<IGroupService>(DI_TYPES.IGroupService).to(GroupService).inSingletonScope();
+
+    // Controllers
+    container.bind<MerchantController>(DI_TYPES.MerchantController).to(MerchantController).inSingletonScope();
+    container.bind<GroupController>(DI_TYPES.GroupController).to(GroupController).inSingletonScope();
   }
 
   /**
@@ -44,5 +72,6 @@ export class ServiceBindings {
     this.bindInfrastructure(container);
     this.bindBootstrap(container);
     this.bindAuth(container);
+    this.bindMerchant(container);
   }
 }

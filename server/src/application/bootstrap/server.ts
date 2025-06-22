@@ -42,10 +42,10 @@ export class ApplicationBootstrap {
     await this.databaseBootstrap.initialize();
 
     // Setup middleware
-    new MiddlewareBootstrap().setupAll(this.app);
+    new MiddlewareBootstrap(this.container).setupAll(this.app);
 
-    // Setup routes
-    new RouteBootstrap().setup(this.app);
+    // Setup routes (DI container injected)
+    new RouteBootstrap(this.container).setup(this.app);
 
     // Setup error handling
     new ErrorBootstrap().setup(this.app);
@@ -58,6 +58,13 @@ export class ApplicationBootstrap {
    */
   getApp(): express.Application {
     return this.app;
+  }
+
+  /**
+   * Get DI Container
+   */
+  getContainer(): Container {
+    return this.container;
   }
 
   /**

@@ -2,4 +2,4 @@
 
 export { DI_TYPES } from './container';
 
-export { CommonParams } from './common';
+export type { CommonParams } from './common';

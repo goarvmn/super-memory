@@ -28,6 +28,10 @@ class Server {
   public async start(): Promise<void> {
     this.bootstrap = await ApplicationBootstrap.create();
 
+    if (!this.bootstrap.isDatabaseConnected()) {
+      console.error('Database not connected');
+    }
+
     // Start HTTP server
     const app = this.bootstrap.getApp();
     const server = app.listen(this.port, () => {

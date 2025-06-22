@@ -23,7 +23,7 @@ export class MerchantRepository implements IMerchantRepository {
     const { search, limit, offset } = params;
 
     let query = `
-      SELECT m.id, m.name, m.goapotik_merchant_code as merchant_code
+      SELECT m.id, m.merchant_name as name, m.goapotik_merchant_code as merchant_code
       FROM merchants m
       LEFT JOIN merchant_group_members mgm ON m.id = mgm.merchant_id
       WHERE m.status = 1 AND mgm.merchant_id IS NULL
@@ -32,7 +32,7 @@ export class MerchantRepository implements IMerchantRepository {
     const queryParams: any[] = [];
 
     if (search) {
-      query += ` AND (m.name LIKE ?)`;
+      query += ` AND (m.merchant_name LIKE ?)`;
       queryParams.push(`%${search}%`);
     }
 
@@ -51,7 +51,7 @@ export class MerchantRepository implements IMerchantRepository {
 
     let query = `
       SELECT 
-        m.id, m.name, m.goapotik_merchant_code as merchant_code,
+        m.id, m.merchant_name as name, m.goapotik_merchant_code as merchant_code,
         mgm.id as registry_id, mgm.status, mgm.group_id, mgm.is_merchant_source
       FROM merchants m
       INNER JOIN merchant_group_members mgm ON m.id = mgm.merchant_id
@@ -61,7 +61,7 @@ export class MerchantRepository implements IMerchantRepository {
     const queryParams: any[] = [];
 
     if (search) {
-      query += ` AND (m.name LIKE ?)`;
+      query += ` AND (m.merchant_name LIKE ?)`;
       queryParams.push(`%${search}%`);
     }
 

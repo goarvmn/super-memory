@@ -111,7 +111,6 @@ export class AuthController {
   validate = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const sessionToken = req.sessionToken;
-      console.log('VALIDATE', sessionToken);
 
       if (!sessionToken) {
         res.status(400).json({
@@ -127,8 +126,6 @@ export class AuthController {
 
       // validate session with explicit validation endpoint
       const validationResult = await this.authService.validateSession(sessionToken);
-      console.log('VALIDATION RESULT', validationResult);
-
       if (!validationResult.isValid) {
         res.status(401).json({
           success: false,
