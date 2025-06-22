@@ -2,6 +2,7 @@
 
 import {
   AddMerchantToRegistryRequest,
+  BulkAddResult,
   Merchant,
   MerchantWithRegistry,
   UpdateMerchantRegistryRequest,
@@ -25,7 +26,7 @@ export interface IMerchantService {
   /**
    * Add merchant to registry
    */
-  addMerchantToRegistry(params: AddMerchantToRegistryRequest): Promise<number>;
+  addMerchantToRegistry(params: AddMerchantToRegistryRequest[]): Promise<BulkAddResult>;
 
   /**
    * Update merchant registry

@@ -70,7 +70,7 @@ export class MerchantRepository implements IMerchantRepository {
 
   async addMerchantToRegistry(params: AddMerchantToRegistryRequest): Promise<number> {
     const member = await this.database.create<any>('merchant_group_members', {
-      group_id: params.group_id || null,
+      group_id: null, // by default, set to null to indicate individual merchant
       merchant_id: params.merchant_id,
       merchant_code: params.merchant_code,
       is_merchant_source: false,

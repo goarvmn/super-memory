@@ -2,6 +2,7 @@
 
 import {
   AddMerchantToRegistryRequest,
+  BulkAddResult,
   Merchant,
   MerchantWithRegistry,
   UpdateMerchantRegistryRequest,
@@ -57,28 +58,56 @@ export class MerchantService implements IMerchantService {
   }
 
   /**
-   * Add merchant to registry
+   * Add merchants to registry
    */
-  async addMerchantToRegistry(params: AddMerchantToRegistryRequest): Promise<number> {
+  async addMerchantToRegistry(params: AddMerchantToRegistryRequest[]): Promise<BulkAddResult> {
     try {
-      // Validate merchant
-      const isAlreadyRegistered = await this.merchantRepository.isMerchantRegistered(params.merchant_id);
-      if (isAlreadyRegistered) {
-        throw new Error(`Merchant ${params.merchant_id} is already registered`);
+      // validate input
+      if (!Array.isArray(params) || params.length === 0) {
+        throw new Error('At least one merchant is required');
       }
 
-      // Validate required fields
-      if (!params.merchant_id || !params.merchant_code) {
-        throw new Error('Merchant ID and merchant code are required');
+      const result: BulkAddResult = {
+        successCount: 0,
+        totalCount: params.length,
+        failed: [],
+      };
+
+      for (const merchant of params) {
+        try {
+          // validate required fields
+          if (!merchant.merchant_id || !merchant.merchant_code) {
+            result.failed.push({
+              merchant_id: merchant.merchant_id || 0,
+              error: 'Merchant ID and merchant code are required',
+            });
+            continue;
+          }
+
+          const isAlreadyRegistered = await this.merchantRepository.isMerchantRegistered(merchant.merchant_id);
+          if (isAlreadyRegistered) {
+            result.failed.push({
+              merchant_id: merchant.merchant_id,
+              error: `Merchant ${merchant.merchant_id} is already registered`,
+            });
+            continue;
+          }
+
+          await this.merchantRepository.addMerchantToRegistry(merchant);
+          result.successCount++;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to process merchant';
+          result.failed.push({
+            merchant_id: merchant.merchant_id,
+            error: errorMessage,
+          });
+        }
       }
 
-      // Add to registry
-      const registryId = await this.merchantRepository.addMerchantToRegistry(params);
-
-      return registryId;
+      return result;
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to add merchant to registry';
-      throw new Error(`Add merchant to registry failed: ${errorMessage}`);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add merchants to registry';
+      throw new Error(`Add merchants to registry failed: ${errorMessage}`);
     }
   }
 
@@ -90,11 +119,6 @@ export class MerchantService implements IMerchantService {
       // Validate required fields
       if (!params.registry_id) {
         throw new Error('Registry ID is required');
-      }
-
-      // Business logic: If moving to group, unset is_merchant_source
-      if (params.group_id && params.is_merchant_source === true) {
-        throw new Error('Merchant cannot be source when assigned to group');
       }
 
       await this.merchantRepository.updateMerchantInRegistry(params);

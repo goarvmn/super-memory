@@ -10,7 +10,6 @@ export interface MerchantWithRegistry extends Merchant {
   registry_id: number;
   status: number;
   group_id: number | null;
-  is_merchant_source: boolean;
 }
 
 export interface GroupSummary {
