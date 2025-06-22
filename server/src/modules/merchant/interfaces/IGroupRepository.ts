@@ -3,7 +3,7 @@
 import {
   AddMerchantToRegistryRequest,
   CreateGroupRequest,
-  GroupCreationResult,
+  CreateGroupResponse,
   GroupMember,
   GroupSummary,
   GroupWithMembers,
@@ -29,7 +29,7 @@ export interface IGroupRepository {
     groupData: CreateGroupRequest,
     members: AddMerchantToRegistryRequest[],
     merchantSourceId?: number
-  ): Promise<GroupCreationResult>;
+  ): Promise<CreateGroupResponse>;
 
   /**
    * Update group
@@ -65,4 +65,9 @@ export interface IGroupRepository {
    * Check if group exists
    */
   groupExists(groupId: number): Promise<boolean>;
+
+  /**
+   * Get all groups count
+   */
+  getAllGroupsCount(params?: CommonParams): Promise<number>;
 }

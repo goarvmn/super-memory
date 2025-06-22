@@ -2,9 +2,9 @@
 
 import {
   AddMerchantToRegistryRequest,
-  BulkAddResult,
+  AddMerchantToRegistryResponse,
+  GetMerchantsResponse,
   Merchant,
-  MerchantWithRegistry,
   UpdateMerchantRegistryRequest,
 } from '@guesense-dash/shared';
 import { CommonParams } from 'server/src/shared';
@@ -21,12 +21,12 @@ export interface IMerchantService {
   /**
    * Get list of (registered) merchants
    */
-  getRegisteredIndividualMerchants(params?: CommonParams): Promise<MerchantWithRegistry[]>;
+  getRegisteredIndividualMerchants(params?: CommonParams): Promise<GetMerchantsResponse>;
 
   /**
    * Add merchant to registry
    */
-  addMerchantToRegistry(params: AddMerchantToRegistryRequest[]): Promise<BulkAddResult>;
+  addMerchantToRegistry(params: AddMerchantToRegistryRequest[]): Promise<AddMerchantToRegistryResponse>;
 
   /**
    * Update merchant registry

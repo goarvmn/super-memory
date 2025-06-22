@@ -57,7 +57,7 @@ export class MerchantRepository implements IMerchantRepository {
       queryParams.push(`%${search}%`);
     }
 
-    if (status) {
+    if (status !== undefined) {
       query += ` AND mgm.status = ?`;
       queryParams.push(status);
     }
@@ -92,5 +92,32 @@ export class MerchantRepository implements IMerchantRepository {
   async isMerchantRegistered(merchantId: number): Promise<boolean> {
     const result = await this.database.findOne('merchant_group_members', { merchant_id: merchantId });
     return !!result;
+  }
+
+  async getRegisteredMerchantsCount(params: CommonParams = {}): Promise<number> {
+    const { search, status } = params;
+
+    let query = `
+      SELECT COUNT(DISTINCT mgm.id) as total
+      FROM merchant_group_members mgm
+      INNER JOIN merchants m ON mgm.merchant_id = m.id
+      WHERE mgm.group_id IS NULL 
+      AND mgm.status = 1
+    `;
+
+    const queryParams: any[] = [];
+
+    if (search) {
+      query += ` AND (m.name LIKE ?)`;
+      queryParams.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (status !== undefined) {
+      query += ` AND mgm.status = ?`;
+      queryParams.push(status);
+    }
+
+    const result = await this.database.query(query, queryParams);
+    return result[0]?.total || 0;
   }
 }
