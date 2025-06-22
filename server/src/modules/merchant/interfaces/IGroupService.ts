@@ -1,8 +1,9 @@
 // server/src/modules/merchant/interfaces/IGroupService.ts
 
 import {
+  AddMerchantToRegistryRequest,
   CreateGroupRequest,
-  GroupMember,
+  GroupCreationResult,
   GroupSummary,
   GroupWithMembers,
   UpdateGroupRequest,
@@ -23,11 +24,6 @@ export interface IGroupService {
    * Get group detail with members
    */
   getGroupWithMembers(groupId: number): Promise<GroupWithMembers>;
-
-  /**
-   * Create new group
-   */
-  createGroup(params: CreateGroupRequest): Promise<number>;
 
   /**
    * Update group
@@ -55,7 +51,11 @@ export interface IGroupService {
   setTemplateSource(groupId: number, merchantId: number): Promise<void>;
 
   /**
-   * Get group members only (helper method)
+   * Create new group with members (atomic operation)
    */
-  getGroupMembers(groupId: number): Promise<GroupMember[]>;
+  createGroupWithMembers(
+    groupData: CreateGroupRequest,
+    members: AddMerchantToRegistryRequest[],
+    merchantSourceId?: number
+  ): Promise<GroupCreationResult>;
 }

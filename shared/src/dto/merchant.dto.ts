@@ -37,3 +37,16 @@ export interface BulkAddResult {
     error: string;
   }>;
 }
+
+export interface GroupCreationResult {
+  groupId: number;
+  groupName: string;
+  membersSuccessCount: number;
+  membersTotalCount: number;
+  membersFailed: Array<{
+    merchant_id: number;
+    error: string;
+  }>;
+  sourceSet: boolean;
+  sourceMerchantId?: number;
+}

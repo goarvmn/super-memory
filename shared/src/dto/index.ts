@@ -13,6 +13,7 @@ export type {
   CreateGroupRequest,
   GetGroupsRequest,
   GetMerchantsRequest,
+  GroupCreationResult,
   UpdateGroupRequest,
   UpdateMerchantRegistryRequest,
 } from './merchant.dto';

@@ -1,7 +1,9 @@
 // server/src/modules/merchant/repositories/GroupRepository.ts
 
 import {
+  AddMerchantToRegistryRequest,
   CreateGroupRequest,
+  GroupCreationResult,
   GroupMember,
   GroupSummary,
   GroupWithMembers,
@@ -11,6 +13,31 @@ import { inject, injectable } from 'inversify';
 import { DatabasePort } from '../../../infrastructure/adapters/database/DatabasePort';
 import { CommonParams, DI_TYPES } from '../../../shared';
 import { IGroupRepository } from '../interfaces';
+
+// Add this method to GroupRepository.ts
+
+/**
+ * Database record interfaces for typing
+ */
+interface GroupRecord {
+  id: number;
+  name: string;
+  status: number;
+  merchant_source_id: number | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+interface MemberRecord {
+  id: number;
+  group_id: number;
+  merchant_id: number;
+  merchant_code: string;
+  is_merchant_source: boolean;
+  status: number;
+  created_at: Date;
+  updated_at: Date;
+}
 
 @injectable()
 export class GroupRepository implements IGroupRepository {
@@ -65,16 +92,6 @@ export class GroupRepository implements IGroupRepository {
       member_count: members.length,
       members,
     };
-  }
-
-  async createGroup(params: CreateGroupRequest): Promise<number> {
-    const group = await this.database.create<any>('merchant_groups', {
-      name: params.name,
-      status: params.status ?? 1,
-      merchant_source_id: params.merchant_source_id || null,
-    });
-
-    return group.id;
   }
 
   async updateGroup(params: UpdateGroupRequest): Promise<void> {
@@ -159,5 +176,100 @@ export class GroupRepository implements IGroupRepository {
       status: 1,
     });
     return group !== null;
+  }
+  /**
+   * Create group with members (atomic transaction operation)
+   */
+  async createGroupWithMembersAtomic(
+    groupData: CreateGroupRequest,
+    members: AddMerchantToRegistryRequest[],
+    merchantSourceId?: number
+  ): Promise<GroupCreationResult> {
+    // start database transaction
+    const transaction = await this.database.startTransaction();
+
+    try {
+      const result: GroupCreationResult = {
+        groupId: 0,
+        groupName: groupData.name,
+        membersSuccessCount: 0,
+        membersTotalCount: members.length,
+        membersFailed: [],
+        sourceSet: false,
+        sourceMerchantId: merchantSourceId,
+      };
+
+      // create group within transaction
+      const groupRecord = await transaction.create<GroupRecord>('merchant_groups', {
+        name: groupData.name,
+        status: groupData.status || 1,
+        merchant_source_id: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      });
+
+      result.groupId = groupRecord.id;
+
+      // add members within same transaction
+      for (const member of members) {
+        try {
+          // determine source merchant
+          const isSource = merchantSourceId === member.merchant_id;
+
+          await transaction.create<MemberRecord>('merchant_group_members', {
+            group_id: result.groupId,
+            merchant_id: member.merchant_id,
+            merchant_code: member.merchant_code,
+            is_merchant_source: isSource,
+            status: 1, // set to active by default
+            created_at: new Date(),
+            updated_at: new Date(),
+          });
+
+          result.membersSuccessCount++;
+
+          if (isSource) {
+            result.sourceSet = true;
+          }
+        } catch (memberError) {
+          const errorMessage = memberError instanceof Error ? memberError.message : 'Failed to add member';
+          result.membersFailed.push({
+            merchant_id: member.merchant_id,
+            error: errorMessage,
+          });
+
+          if (merchantSourceId === member.merchant_id) {
+            result.sourceSet = false;
+          }
+        }
+      }
+
+      if (result.sourceSet && merchantSourceId) {
+        await transaction.update(
+          'merchant_groups',
+          { id: result.groupId },
+          {
+            merchant_source_id: merchantSourceId,
+            updated_at: new Date(),
+          }
+        );
+      }
+
+      if (result.membersSuccessCount === 0) {
+        // business rule: Group without any members should fail
+        throw new Error('No members were successfully added to the group');
+      }
+
+      // commit transaction
+      await transaction.commit();
+
+      return result;
+    } catch (error) {
+      // rollback transaction
+      await transaction.rollback();
+
+      const errorMessage = error instanceof Error ? error.message : 'Transaction failed';
+      throw new Error(`Create group with members atomic operation failed: ${errorMessage}`);
+    }
   }
 }
