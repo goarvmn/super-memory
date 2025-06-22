@@ -1,9 +1,10 @@
 // server/src/application/bootstrap/routes.ts
 
-import { AUTH_ENDPOINTS, BaseApiResponse } from '@guesense-dash/shared';
+import { AUTH_ENDPOINTS, BaseApiResponse, GROUP_ENDPOINTS, MERCHANT_ENDPOINTS } from '@guesense-dash/shared';
 import express from 'express';
 import { getEnvironmentConfig } from '../../infrastructure/config/environment';
 import type { AuthController, AuthMiddleware } from '../../modules/auth';
+import type { GroupController, MerchantController } from '../../modules/merchant';
 import { DI_TYPES } from '../../shared';
 import { container } from '../container';
 
@@ -14,17 +15,17 @@ export class RouteBootstrap {
   private env: ReturnType<typeof getEnvironmentConfig>;
   private authController: AuthController;
   private authMiddleware: AuthMiddleware;
+  private merchantController: MerchantController;
+  private groupController: GroupController;
 
   constructor() {
     this.env = getEnvironmentConfig();
-    // Get controllers from DI container
     this.authController = container.get<AuthController>(DI_TYPES.AuthController);
     this.authMiddleware = container.get<AuthMiddleware>(DI_TYPES.AuthMiddleware);
+    this.merchantController = container.get<MerchantController>(DI_TYPES.MerchantController);
+    this.groupController = container.get<GroupController>(DI_TYPES.GroupController);
   }
 
-  /**
-   * Setup health check endpoint
-   */
   private setupHealthRoutes(app: express.Application): void {
     app.get('/health', (_req, res) => {
       res.json({
@@ -37,28 +38,75 @@ export class RouteBootstrap {
     });
   }
 
-  /**
-   * Setup API routes with dependency injection
-   */
   private setupApiRoutes(app: express.Application): void {
-    // API routes
     const apiRouter = express.Router();
 
-    // Auth routes (public)
+    // Auth routes
     apiRouter.post(AUTH_ENDPOINTS.LOGIN, this.authController.login);
-
-    // Auth routes (protected)
     apiRouter.post(AUTH_ENDPOINTS.LOGOUT, this.authMiddleware.authenticate, this.authController.logout);
     apiRouter.get(AUTH_ENDPOINTS.VALIDATE, this.authMiddleware.authenticate, this.authController.validate);
     apiRouter.get(AUTH_ENDPOINTS.ME, this.authMiddleware.authenticate, this.authController.me);
 
-    // Mount API router
+    // Merchant routes
+    apiRouter.get(
+      MERCHANT_ENDPOINTS.GET_AVAILABLE_MERCHANTS,
+      this.authMiddleware.authenticate,
+      this.merchantController.getAvailableMerchants
+    );
+    apiRouter.get(
+      MERCHANT_ENDPOINTS.GET_REGISTERED_MERCHANTS,
+      this.authMiddleware.authenticate,
+      this.merchantController.getRegisteredMerchants
+    );
+    apiRouter.post(
+      MERCHANT_ENDPOINTS.ADD_MERCHANTS_TO_REGISTRY,
+      this.authMiddleware.authenticate,
+      this.merchantController.addMerchantsToRegistry
+    );
+    apiRouter.put(
+      MERCHANT_ENDPOINTS.UPDATE_MERCHANT_REGISTRY,
+      this.authMiddleware.authenticate,
+      this.merchantController.updateMerchantRegistry
+    );
+    apiRouter.delete(
+      MERCHANT_ENDPOINTS.REMOVE_MERCHANT_FROM_REGISTRY,
+      this.authMiddleware.authenticate,
+      this.merchantController.removeMerchantFromRegistry
+    );
+
+    // Group routes
+    apiRouter.get(GROUP_ENDPOINTS.GET_ALL_GROUPS, this.authMiddleware.authenticate, this.groupController.getAllGroups);
+    apiRouter.get(
+      GROUP_ENDPOINTS.GET_GROUP_WITH_MEMBERS,
+      this.authMiddleware.authenticate,
+      this.groupController.getGroupWithMembers
+    );
+    apiRouter.post(
+      GROUP_ENDPOINTS.CREATE_GROUP_WITH_MEMBERS,
+      this.authMiddleware.authenticate,
+      this.groupController.createGroupWithMembers
+    );
+    apiRouter.put(GROUP_ENDPOINTS.UPDATE_GROUP, this.authMiddleware.authenticate, this.groupController.updateGroup);
+    apiRouter.delete(GROUP_ENDPOINTS.DELETE_GROUP, this.authMiddleware.authenticate, this.groupController.deleteGroup);
+    apiRouter.post(
+      GROUP_ENDPOINTS.ADD_MERCHANTS_TO_GROUP,
+      this.authMiddleware.authenticate,
+      this.groupController.addMerchantsToGroup
+    );
+    apiRouter.delete(
+      GROUP_ENDPOINTS.REMOVE_MEMBER_FROM_GROUP,
+      this.authMiddleware.authenticate,
+      this.groupController.removeMemberFromGroup
+    );
+    apiRouter.put(
+      GROUP_ENDPOINTS.SET_TEMPLATE_SOURCE,
+      this.authMiddleware.authenticate,
+      this.groupController.setTemplateSource
+    );
+
     app.use('/api', apiRouter);
   }
 
-  /**
-   * Setup 404 handler
-   */
   private setup404Handler(app: express.Application): void {
     app.use((req, res) => {
       res.status(404).json({
@@ -72,9 +120,6 @@ export class RouteBootstrap {
     });
   }
 
-  /**
-   * Setup all application routes
-   */
   setup(app: express.Application): void {
     this.setupHealthRoutes(app);
     this.setupApiRoutes(app);
