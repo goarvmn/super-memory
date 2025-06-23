@@ -1,10 +1,13 @@
-// client/src/lib/stores/auth.store.ts
+// client/src/lib/stores/auth/auth.store.ts
 
-import { type LoginRequest, type User } from '@guesense-dash/shared/dto';
+import { type LoginRequest, type User } from '@guesense-dash/shared';
 import { create } from 'zustand';
-import { authApi } from '../api';
-import { storage } from '../utils/storage';
+import { authApi } from '../../api';
+import { storage } from '../../utils/storage';
 
+/**
+ * Auth Store State Interface
+ */
 interface AuthState {
   // State
   user: User | null;
@@ -17,7 +20,7 @@ interface AuthState {
   checkAuth: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthState>((set, _get) => ({
+export const useAuthStore = create<AuthState>(set => ({
   // Simple initial state
   user: null,
   isAuthenticated: false,
