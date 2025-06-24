@@ -23,7 +23,7 @@ export class MerchantService implements IMerchantService {
 
   /**
    * Get available merchants
-   * Bussiness logic: get all merchants that are not registered in the registry
+   * Business logic: retrieve all active merchants that are available for registration (not yet registered in the registry)
    */
   async getAvailableMerchants(params?: CommonParams): Promise<Merchant[]> {
     try {
@@ -42,7 +42,7 @@ export class MerchantService implements IMerchantService {
 
   /**
    * Get registered merchants
-   * Bussiness logic: get all merchants that are registered in the registry with pagination
+   * Business logic: retrieve all merchants that are already registered in the registry with pagination support and total count
    */
   async getRegisteredMerchants(params?: CommonParams): Promise<GetMerchantsResponse> {
     try {
@@ -80,7 +80,8 @@ export class MerchantService implements IMerchantService {
 
   /**
    * Add merchants to registry
-   * Bussiness logic: add merchant(s) to registry
+   * Business logic: batch register multiple merchants to the registry with validation and duplicate checking.
+   * Returns success/failure count and details for each merchant processing attempt
    */
   async addMerchantToRegistry(params: AddMerchantToRegistryRequest[]): Promise<AddMerchantToRegistryResponse> {
     try {
@@ -136,7 +137,7 @@ export class MerchantService implements IMerchantService {
 
   /**
    * Update merchant registry
-   * Bussiness logic: update merchant in registry
+   * Business logic: update merchant registration data in the registry with validation of required registry ID
    */
   async updateMerchantRegistry(params: UpdateMerchantRegistryRequest): Promise<void> {
     try {
@@ -154,7 +155,7 @@ export class MerchantService implements IMerchantService {
 
   /**
    * Remove merchant from registry
-   * Bussiness logic: remove merchant from registry
+   * Business logic: unregister a merchant from the registry by removing its registration record with validation
    */
   async removeMerchantFromRegistry(registryId: number): Promise<void> {
     try {

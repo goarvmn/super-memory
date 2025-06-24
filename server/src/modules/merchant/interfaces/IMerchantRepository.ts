@@ -3,7 +3,7 @@
 import {
   AddMerchantToRegistryRequest,
   Merchant,
-  MerchantWithRegistry,
+  MerchantRegistry,
   UpdateMerchantRegistryRequest,
 } from '@guesense-dash/shared';
 import { CommonParams } from 'server/src/shared';
@@ -11,43 +11,43 @@ import { CommonParams } from 'server/src/shared';
 export interface IMerchantRepository {
   /**
    * Get available merchants
-   * Bussiness logic: get all active merchants from table `merchants` and filter out merchants that are already registered in the registry
+   * Business logic: get all active merchants from table `merchants` that are not yet registered in the registry
    */
   getAvailableMerchants(params?: CommonParams): Promise<Merchant[]>;
 
   /**
    * Get registered merchants
-   * Bussiness logic: get all merchants from `merchant_group_members` and filter out merchants that are not registered in the registry
+   * Business logic: get all merchants that are already registered in the registry as individual merchants (not part of any group)
    */
-  getRegisteredMerchants(params?: CommonParams): Promise<MerchantWithRegistry[]>;
+  getRegisteredMerchants(params?: CommonParams): Promise<MerchantRegistry[]>;
 
   /**
    * Add merchant to registry
-   * Bussiness logic: add merchant to `merchant_group_members`
+   * Business logic: register a merchant as an individual merchant in the registry by adding to `merchant_group_members`
    */
   addMerchantToRegistry(params: AddMerchantToRegistryRequest): Promise<number>;
 
   /**
    * Update merchant in registry
-   * Bussiness logic: update merchant from `merchant_group_members`
+   * Business logic: update merchant registration data in `merchant_group_members`
    */
   updateMerchantInRegistry(params: UpdateMerchantRegistryRequest): Promise<void>;
 
   /**
    * Remove merchant from registry
-   * Bussiness logic: remove merchant from `merchant_group_members`
+   * Business logic: unregister a merchant by removing its record from `merchant_group_members`
    */
   removeMerchantFromRegistry(registryId: number): Promise<void>;
 
   /**
    * Check if merchant is registered
-   * Bussiness logic: check if merchant is registered in `merchant_group_members`
+   * Business logic: verify if a merchant is already registered in the registry by checking `merchant_group_members`
    */
   isMerchantRegistered(merchantId: number): Promise<boolean>;
 
   /**
-   * Get reigistered merchants count
-   * Bussiness logic: get count of registered merchants
+   * Get registered merchants count
+   * Business logic: count total number of active registered individual merchants in the registry
    */
   getRegisteredMerchantsCount(params: CommonParams): Promise<number>;
 }
