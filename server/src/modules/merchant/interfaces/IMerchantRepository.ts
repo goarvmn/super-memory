@@ -8,6 +8,15 @@ import {
 } from '@guesense-dash/shared';
 import { CommonParams } from 'server/src/shared';
 
+export interface MerchantMemberRecord {
+  id: number;
+  group_id: number;
+  merchant_id: number;
+  merchant_code: string;
+  is_merchant_source: boolean;
+  status: number;
+}
+
 export interface IMerchantRepository {
   /**
    * Get available merchants
@@ -23,7 +32,7 @@ export interface IMerchantRepository {
 
   /**
    * Add merchant to registry
-   * Business logic: register a merchant as an individual merchant in the registry by adding to `merchant_group_members`
+   * Business logic: register a merchant by adding to `merchant_group_members`
    */
   addMerchantToRegistry(params: AddMerchantToRegistryRequest): Promise<number>;
 
@@ -37,13 +46,13 @@ export interface IMerchantRepository {
    * Remove merchant from registry
    * Business logic: unregister a merchant by removing its record from `merchant_group_members`
    */
-  removeMerchantFromRegistry(registryId: number): Promise<void>;
+  removeMerchantFromRegistry(registry_id: number): Promise<void>;
 
   /**
    * Check if merchant is registered
-   * Business logic: verify if a merchant is already registered in the registry by checking `merchant_group_members`
+   * Business logic: find a merchant in the registry by partial matching on `merchant_group_members`
    */
-  isMerchantRegistered(merchantId: number): Promise<boolean>;
+  findRegisteredMerchant(params: Partial<MerchantMemberRecord>): Promise<MerchantMemberRecord | null>;
 
   /**
    * Get registered merchants count

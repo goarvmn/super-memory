@@ -27,7 +27,7 @@ export interface IMerchantService {
 
   /**
    * Add merchants to registry
-   * Business logic: batch register multiple merchants to the registry with validation and duplicate checking.
+   * Business logic: batch register multiple merchants to the registry with validation.
    * Returns success/failure count and details for each merchant processing attempt
    */
   addMerchantToRegistry(params: AddMerchantToRegistryRequest[]): Promise<AddMerchantToRegistryResponse>;

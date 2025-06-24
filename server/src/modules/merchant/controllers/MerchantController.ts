@@ -147,12 +147,9 @@ export class MerchantController {
   updateMerchantRegistry = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const registryId = Number(req.params.registryId);
-      const updateData = req.body as Omit<UpdateMerchantRegistryRequest, 'registry_id'>;
+      const updateData = req.body as Omit<UpdateMerchantRegistryRequest, 'registryId'>;
 
-      await this.merchantService.updateMerchantRegistry({
-        registry_id: registryId,
-        ...updateData,
-      });
+      await this.merchantService.updateMerchantRegistry({ ...updateData, registryId });
 
       res.status(200).json({
         success: true,

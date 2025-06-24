@@ -4,17 +4,15 @@ import {
   AddMerchantToRegistryRequest,
   CreateGroupRequest,
   CreateGroupResponse,
-  GroupMember,
   GroupSummary,
   GroupWithMembers,
+  MerchantRegistry,
   UpdateGroupRequest,
 } from '@guesense-dash/shared';
 import { inject, injectable } from 'inversify';
 import { DatabasePort } from '../../../infrastructure/adapters/database/DatabasePort';
 import { CommonParams, DI_TYPES } from '../../../shared';
-import { IGroupRepository } from '../interfaces';
-
-// Add this method to GroupRepository.ts
+import { GroupMemberRecord, IGroupRepository } from '../interfaces';
 
 /**
  * Database record interfaces for typing
@@ -39,13 +37,21 @@ interface MemberRecord {
   updated_at: Date;
 }
 
+interface GroupSummaryRecord {
+  id: number;
+  name: string;
+  status: number;
+  merchant_source_id: number | null;
+  members_count: number;
+}
+
 @injectable()
 export class GroupRepository implements IGroupRepository {
   constructor(@inject(DI_TYPES.Database) private database: DatabasePort) {}
 
   /**
    * Get all groups
-   * Bussiness logic: get all active groups and count active members
+   * Business logic: retrieve all active groups with their active member counts, supports search and pagination
    */
   async getAllGroups(params: CommonParams = {}): Promise<GroupSummary[]> {
     const { search, status, limit = 9, offset = 0 } = params;
@@ -53,7 +59,7 @@ export class GroupRepository implements IGroupRepository {
     let query = `
       SELECT 
         g.id, g.name, g.status, g.merchant_source_id,
-        COUNT(mgm.id) as member_count
+        COUNT(mgm.id) as members_count
       FROM merchant_groups g
       LEFT JOIN merchant_group_members mgm ON g.id = mgm.group_id AND mgm.status = 1
       WHERE g.status = 1
@@ -75,16 +81,25 @@ export class GroupRepository implements IGroupRepository {
     query += ` ORDER BY g.id DESC LIMIT ? OFFSET ?`;
     queryParams.push(limit, offset);
 
-    return await this.database.query<GroupSummary[]>(query, queryParams);
+    const results = await this.database.query<GroupSummaryRecord[]>(query, queryParams);
+
+    // transform to GroupSummary
+    return results.map<GroupSummary>(group => ({
+      id: group.id,
+      name: group.name,
+      status: group.status,
+      merchantSourceId: group.merchant_source_id,
+      membersCount: group.members_count,
+    }));
   }
 
   /**
    * Get group detail with members
-   * Bussiness logic: get group detail with active members
+   * Business logic: retrieve group information along with all its active members and their details
    */
-  async getGroupWithMembers(groupId: number): Promise<GroupWithMembers | null> {
+  async getGroupWithMembers(group_id: number): Promise<GroupWithMembers | null> {
     const group = await this.database.findOne<any>('merchant_groups', {
-      id: groupId,
+      id: group_id,
       status: 1,
     });
 
@@ -92,24 +107,37 @@ export class GroupRepository implements IGroupRepository {
       return null;
     }
 
-    // Get members with merchant details
-    const members = await this.getGroupMembers(groupId);
+    // get members with details
+    const members = await this.getGroupMembers(group_id);
+
+    // transform to MerchantRegistry
+    const registeredMembers = members.map<MerchantRegistry>(member => ({
+      id: member.merchant_id,
+      name: member.merchant_name,
+      code: member.merchant_code,
+      status: member.merchant_status,
+      registryId: member.registry_id,
+      registryStatus: member.registry_status,
+      groupId: member.group_id,
+      isMerchantSource: member.is_merchant_source,
+    }));
 
     return {
       ...group,
       member_count: members.length,
-      members,
-    };
+      members: registeredMembers,
+    } as GroupWithMembers;
   }
 
   /**
    * Create new group with members
-   * Bussiness logic: create new group with members using atomic transaction
+   * Business logic: atomically create a new group and add members to it, with optional merchant source designation.
+   * Uses database transaction to ensure data consistency
    */
   async createGroupWithMembersAtomic(
-    groupData: CreateGroupRequest,
+    group_data: CreateGroupRequest,
     members: AddMerchantToRegistryRequest[],
-    merchantSourceId?: number
+    merchant_source_id?: number
   ): Promise<CreateGroupResponse> {
     // start database transaction
     const transaction = await this.database.startTransaction();
@@ -117,18 +145,18 @@ export class GroupRepository implements IGroupRepository {
     try {
       const result: CreateGroupResponse = {
         groupId: 0,
-        groupName: groupData.name,
+        groupName: group_data.name,
         membersSuccessCount: 0,
         membersTotalCount: members.length,
         membersFailed: [],
         sourceSet: false,
-        sourceMerchantId: merchantSourceId,
+        sourceMerchantId: merchant_source_id,
       };
 
       // create group within transaction
       const groupRecord = await transaction.create<GroupRecord>('merchant_groups', {
-        name: groupData.name,
-        status: groupData.status || 1,
+        name: group_data.name,
+        status: group_data.status || 1,
         merchant_source_id: null,
         created_at: new Date(),
         updated_at: new Date(),
@@ -139,13 +167,13 @@ export class GroupRepository implements IGroupRepository {
       // add members within same transaction
       for (const member of members) {
         try {
-          // determine source merchant
-          const isSource = merchantSourceId === member.merchant_id;
+          // determine source merchant - fixed property access
+          const isSource = merchant_source_id === member.id;
 
           await transaction.create<MemberRecord>('merchant_group_members', {
             group_id: result.groupId,
-            merchant_id: member.merchant_id,
-            merchant_code: member.merchant_code,
+            merchant_id: member.id,
+            merchant_code: member.code,
             is_merchant_source: isSource,
             status: 1, // set to active by default
             created_at: new Date(),
@@ -160,22 +188,22 @@ export class GroupRepository implements IGroupRepository {
         } catch (memberError) {
           const errorMessage = memberError instanceof Error ? memberError.message : 'Failed to add member';
           result.membersFailed.push({
-            merchant_id: member.merchant_id,
+            code: member.code,
             error: errorMessage,
           });
 
-          if (merchantSourceId === member.merchant_id) {
+          if (merchant_source_id === member.id) {
             result.sourceSet = false;
           }
         }
       }
 
-      if (result.sourceSet && merchantSourceId) {
+      if (result.sourceSet && merchant_source_id) {
         await transaction.update(
           'merchant_groups',
           { id: result.groupId },
           {
-            merchant_source_id: merchantSourceId,
+            merchant_source_id: merchant_source_id,
             updated_at: new Date(),
           }
         );
@@ -201,7 +229,7 @@ export class GroupRepository implements IGroupRepository {
 
   /**
    * Update group
-   * Bussiness logic: update group information
+   * Business logic: update group information including name, status, or merchant source
    */
   async updateGroup(params: UpdateGroupRequest): Promise<void> {
     const { id, ...updateData } = params;
@@ -211,42 +239,40 @@ export class GroupRepository implements IGroupRepository {
 
   /**
    * Delete group
-   * Bussiness logic: delete group, soft delete by setting status to 0
+   * Business logic: soft delete a group by setting its status to inactive (0), preserving data for audit purposes
    */
-  async deleteGroup(groupId: number): Promise<void> {
-    await this.database.update('merchant_groups', { id: groupId }, { status: 0 });
+  async deleteGroup(group_id: number): Promise<void> {
+    await this.database.update('merchant_groups', { id: group_id }, { status: 0 });
   }
 
   /**
-   * Add member to group
-   * Bussiness logic: add member to group
+   * Assign member to group
+   * Business logic: assign a registered merchant (currently individual) to an existing group by updating their group assignment with optional source designation
    */
-  async addMemberToGroup(
-    groupId: number,
-    merchantId: number,
-    merchantCode: string,
-    isSource: boolean = false
-  ): Promise<void> {
-    await this.database.create('merchant_group_members', {
-      group_id: groupId,
-      merchant_id: merchantId,
-      merchant_code: merchantCode,
-      is_merchant_source: isSource,
-      status: 1,
-    });
+  async assignMemberToGroup(group_id: number, merchant_id: number, is_merchant_source: boolean = false): Promise<void> {
+    await this.database.update(
+      'merchant_group_members',
+      {
+        merchant_id: merchant_id,
+      },
+      {
+        group_id: group_id,
+        is_merchant_source: is_merchant_source,
+      }
+    );
   }
 
   /**
    * Remove member from group
-   * Bussiness logic: remove member from group
+   * Business logic: soft delete a member from a group by setting their status to inactive, preserving membership history
    */
-  async removeMemberFromGroup(groupId: number, merchantId: number): Promise<void> {
+  async removeMemberFromGroup(group_id: number, merchant_id: number): Promise<void> {
     // soft delete: set status to 0
     await this.database.update(
       'merchant_group_members',
       {
-        group_id: groupId,
-        merchant_id: merchantId,
+        group_id: group_id,
+        merchant_id: merchant_id,
       },
       { status: 0 }
     );
@@ -254,25 +280,30 @@ export class GroupRepository implements IGroupRepository {
 
   /**
    * Set template source merchant
-   * Bussiness logic: set template source merchant using transaction
+   * Business logic: atomically designate a specific merchant as the template source for a group,
+   * ensuring only one source merchant exists per group using transaction
    */
-  async setTemplateSource(groupId: number, merchantId: number): Promise<void> {
+  async setTemplateSource(group_id: number, merchant_id: number): Promise<void> {
     // use transaction
     const transaction = await this.database.startTransaction();
 
     try {
-      // reset all members
-      await transaction.update('merchant_group_members', { group_id: groupId, status: 1 }, { is_merchant_source: 0 });
-
-      // set merchant source
+      // reset all members - clear existing source designation
       await transaction.update(
         'merchant_group_members',
-        { group_id: groupId, merchant_id: merchantId, status: 1 },
-        { is_merchant_source: 1 }
+        { group_id: group_id, status: 1 },
+        { is_merchant_source: false }
+      );
+
+      // set new merchant source
+      await transaction.update(
+        'merchant_group_members',
+        { group_id: group_id, merchant_id: merchant_id, status: 1 },
+        { is_merchant_source: true }
       );
 
       // update group merchant_source_id
-      await transaction.update('merchant_groups', { id: groupId }, { merchant_source_id: merchantId });
+      await transaction.update('merchant_groups', { id: group_id }, { merchant_source_id: merchant_id });
 
       await transaction.commit();
     } catch (error) {
@@ -283,29 +314,30 @@ export class GroupRepository implements IGroupRepository {
 
   /**
    * Get group members
-   * Bussiness logic: get group members by group ID, filter out inactive merchants
+   * Business logic: retrieve all active members of a group with their merchant details,
+   * ordered by source status (source first) then by merchant name
    */
-  async getGroupMembers(groupId: number): Promise<GroupMember[]> {
+  async getGroupMembers(group_id: number): Promise<GroupMemberRecord[]> {
     const query = `
       SELECT 
-        mgm.id, mgm.group_id, mgm.merchant_id, mgm.merchant_code, mgm.is_merchant_source,
-        m.merchant_name, m.status as merchant_status
+      m.merchant_name, m.status as merchant_status,
+      mgm.id as registry_id, mgm.group_id, mgm.merchant_id, mgm.merchant_code, mgm.is_merchant_source, mgm.status as registry_status
       FROM merchant_group_members mgm
       INNER JOIN merchants m ON mgm.merchant_id = m.id
       WHERE mgm.group_id = ? AND mgm.status = 1 AND m.status = 1
       ORDER BY mgm.is_merchant_source DESC, m.merchant_name ASC
     `;
 
-    return await this.database.query<GroupMember[]>(query, [groupId]);
+    return await this.database.query<GroupMemberRecord[]>(query, [group_id]);
   }
 
   /**
    * Check if group exists
-   * Bussiness logic: check if group exists
+   * Business logic: verify if a group exists and is active in the system
    */
-  async groupExists(groupId: number): Promise<boolean> {
+  async groupExists(group_id: number): Promise<boolean> {
     const group = await this.database.findOne('merchant_groups', {
-      id: groupId,
+      id: group_id,
       status: 1,
     });
     return group !== null;
@@ -313,7 +345,7 @@ export class GroupRepository implements IGroupRepository {
 
   /**
    * Get all groups count
-   * Bussiness logic: get all groups count, filter out inactive groups
+   * Business logic: count total number of active groups, supports search filtering for pagination purposes
    */
   async getAllGroupsCount(params: CommonParams = {}): Promise<number> {
     const { search, status } = params;
@@ -342,19 +374,19 @@ export class GroupRepository implements IGroupRepository {
 
   /**
    * Check if merchant is already a member of specific group
-   * Bussiness logic: check if merchant is already a member of specific group, filter out inactive merchants
+   * Business logic: verify if a merchant is already an active member of a specific group to prevent duplicate memberships
    */
-  async isMemberOfGroup(groupId: number, merchantId: number): Promise<boolean> {
+  async isMemberOfGroup(group_id: number, merchant_id: number): Promise<boolean> {
     const query = `
-    SELECT id 
-    FROM merchant_group_members 
-    WHERE group_id = ? 
-    AND merchant_id = ? 
-    AND status = 1
-    LIMIT 1
-  `;
+      SELECT id 
+      FROM merchant_group_members 
+      WHERE group_id = ? 
+      AND merchant_id = ? 
+      AND status = 1
+      LIMIT 1
+    `;
 
-    const result = await this.database.query(query, [groupId, merchantId]);
+    const result = await this.database.query(query, [group_id, merchant_id]);
     return result.length > 0;
   }
 }

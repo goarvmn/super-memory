@@ -1,12 +1,12 @@
 // shared/src/dto/merchant.dto.ts
 
-import { GroupSummary, MerchantWithRegistry } from '../types';
+import { GroupSummary, MerchantRegistryWithStats } from '../types';
 import { PaginationRequest, SearchFilter, StatusFilter } from './common.dto';
 
 export interface GetMerchantsRequest extends PaginationRequest, StatusFilter, SearchFilter {}
 
 export interface GetMerchantsResponse {
-  merchants: MerchantWithRegistry[];
+  merchants: MerchantRegistryWithStats[];
   pagination: {
     total: number;
     totalPages: number;
@@ -16,22 +16,25 @@ export interface GetMerchantsResponse {
 }
 
 export interface AddMerchantToRegistryRequest {
-  merchant_id: number;
-  merchant_code: string;
+  id: number;
+  code: string;
+  group_id?: number | null;
+  is_merchant_source?: boolean | null;
 }
 
 export interface AddMerchantToRegistryResponse {
   successCount: number;
   totalCount: number;
   failed: Array<{
-    merchant_id: number;
+    code: string;
     error: string;
   }>;
 }
 
 export interface UpdateMerchantRegistryRequest {
-  registry_id: number;
-  group_id?: number | null;
+  registryId: number;
+  // field to be updated
+  groupId?: number | null;
   status?: boolean;
 }
 
@@ -58,7 +61,7 @@ export interface CreateGroupResponse {
   membersSuccessCount: number;
   membersTotalCount: number;
   membersFailed: Array<{
-    merchant_id: number;
+    code: string;
     error: string;
   }>;
   sourceSet: boolean;
@@ -69,14 +72,14 @@ export interface UpdateGroupRequest {
   id: number;
   name?: string;
   status?: number;
-  merchant_source_id?: number | null;
+  merchantSourceId?: number | null;
 }
 
 export interface BulkAddMerchantsResponse {
   successCount: number;
   totalCount: number;
   failed: Array<{
-    merchant_id: number;
+    code: string;
     error: string;
   }>;
 }

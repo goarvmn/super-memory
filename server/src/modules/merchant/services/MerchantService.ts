@@ -46,7 +46,7 @@ export class MerchantService implements IMerchantService {
    */
   async getRegisteredMerchants(params?: CommonParams): Promise<GetMerchantsResponse> {
     try {
-      const limit = params?.limit ?? 9;
+      const limit = params?.limit ?? 6;
       const offset = params?.offset ?? 0;
 
       const defaultParams: CommonParams = {
@@ -80,7 +80,7 @@ export class MerchantService implements IMerchantService {
 
   /**
    * Add merchants to registry
-   * Business logic: batch register multiple merchants to the registry with validation and duplicate checking.
+   * Business logic: batch register multiple merchants to the registry with validation.
    * Returns success/failure count and details for each merchant processing attempt
    */
   async addMerchantToRegistry(params: AddMerchantToRegistryRequest[]): Promise<AddMerchantToRegistryResponse> {
@@ -90,43 +90,28 @@ export class MerchantService implements IMerchantService {
         throw new Error('At least one merchant is required');
       }
 
-      const result: AddMerchantToRegistryResponse = {
+      const result = {
         successCount: 0,
         totalCount: params.length,
         failed: [],
-      };
+      } as AddMerchantToRegistryResponse;
 
-      for (const merchant of params) {
-        try {
-          // validate required fields
-          if (!merchant.merchant_id || !merchant.merchant_code) {
-            result.failed.push({
-              merchant_id: merchant.merchant_id || 0,
-              error: 'Merchant ID and merchant code are required',
-            });
-            continue;
-          }
+      // process all merchants in parallel
+      const promiseResults = await Promise.allSettled(
+        params.map((merchant, index) => this.processMerchant(merchant, index))
+      );
 
-          // check if merchant is already registered
-          const isAlreadyRegistered = await this.merchantRepository.isMerchantRegistered(merchant.merchant_id);
-          if (isAlreadyRegistered) {
-            result.failed.push({
-              merchant_id: merchant.merchant_id,
-              error: `Merchant ${merchant.merchant_id} is already registered`,
-            });
-            continue;
-          }
-
-          await this.merchantRepository.addMerchantToRegistry(merchant);
+      // collect promiseResults
+      promiseResults.forEach((promiseResult, index) => {
+        if (promiseResult.status === 'fulfilled') {
           result.successCount++;
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to process merchant';
+        } else {
           result.failed.push({
-            merchant_id: merchant.merchant_id,
-            error: errorMessage,
+            code: params[index].code || 'unknown',
+            error: promiseResult.reason.message,
           });
         }
-      }
+      });
 
       return result;
     } catch (error) {
@@ -142,8 +127,14 @@ export class MerchantService implements IMerchantService {
   async updateMerchantRegistry(params: UpdateMerchantRegistryRequest): Promise<void> {
     try {
       // validate required fields
-      if (!params.registry_id) {
+      if (!params.registryId) {
         throw new Error('Registry ID is required');
+      }
+
+      // check if merchant is already registered
+      const registeredMerchant = await this.merchantRepository.findRegisteredMerchant({ id: params.registryId });
+      if (!registeredMerchant) {
+        throw new Error(`Merchant is not registered`);
       }
 
       await this.merchantRepository.updateMerchantInRegistry(params);
@@ -169,5 +160,27 @@ export class MerchantService implements IMerchantService {
       const errorMessage = error instanceof Error ? error.message : 'Failed to remove merchant from registry';
       throw new Error(`Remove merchant from registry failed: ${errorMessage}`);
     }
+  }
+
+  /**
+   * Process single merchant registration
+   * Private method to handle individual merchant processing with validation
+   */
+  private async processMerchant(merchant: AddMerchantToRegistryRequest, _index: number): Promise<void> {
+    // validate required fields
+    if (!merchant.id || !merchant.code) {
+      throw new Error('ID and code are required');
+    }
+
+    // check if merchant is already registered
+    const registeredMerchant = await this.merchantRepository.findRegisteredMerchant({
+      merchant_id: merchant.id,
+    });
+
+    if (registeredMerchant) {
+      throw new Error(`Merchant "${merchant.code}" is already registered`);
+    }
+
+    await this.merchantRepository.addMerchantToRegistry(merchant);
   }
 }
