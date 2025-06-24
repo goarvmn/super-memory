@@ -120,9 +120,13 @@ export class MerchantRepository implements IMerchantRepository {
    * Business logic: update merchant registration data in `merchant_group_members`
    */
   async updateMerchantInRegistry(params: UpdateMerchantRegistryRequest): Promise<void> {
-    const { registryId, ...updateData } = params;
+    const { registryId, groupId, registryStatus } = params;
 
-    await this.database.update('merchant_group_members', { id: registryId }, updateData);
+    await this.database.update(
+      'merchant_group_members',
+      { id: registryId },
+      { group_id: groupId, status: registryStatus }
+    );
   }
 
   /**

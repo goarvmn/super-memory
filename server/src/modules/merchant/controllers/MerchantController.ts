@@ -147,6 +147,20 @@ export class MerchantController {
   updateMerchantRegistry = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
     try {
       const registryId = Number(req.params.registryId);
+
+      // validate registry ID
+      if (registryId <= 0 || isNaN(registryId)) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: MerchantErrorCode.VALIDATION_ERROR,
+            message: 'Invalid registry ID',
+          },
+          timestamp: new Date().toISOString(),
+        } as BaseApiResponse<never>);
+        return;
+      }
+
       const updateData = req.body as Omit<UpdateMerchantRegistryRequest, 'registryId'>;
 
       await this.merchantService.updateMerchantRegistry({ ...updateData, registryId });

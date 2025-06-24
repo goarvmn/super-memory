@@ -35,7 +35,7 @@ export interface UpdateMerchantRegistryRequest {
   registryId: number;
   // field to be updated
   groupId?: number | null;
-  status?: boolean;
+  registryStatus?: number;
 }
 
 export interface GetGroupsRequest extends PaginationRequest, SearchFilter, StatusFilter {}
