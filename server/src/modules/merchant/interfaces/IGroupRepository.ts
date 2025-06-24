@@ -53,7 +53,7 @@ export interface IGroupRepository {
 
   /**
    * Delete group
-   * Business logic: soft delete a group by setting its status to inactive (0), preserving data for audit purposes
+   * Business logic: delete group and deactivate all members, members become inactive individuals
    */
   deleteGroup(group_id: number): Promise<void>;
 

@@ -83,7 +83,7 @@ export class MerchantRepository implements IMerchantRepository {
       queryParams.push(status);
     }
 
-    query += ` ORDER BY mgm.id DESC LIMIT ? OFFSET ?`;
+    query += ` ORDER BY mgm.id DESC, mgm.status DESC LIMIT ? OFFSET ?`; // order by id and make sure inactive is last
     queryParams.push(limit, offset);
 
     const result = await this.database.query<MerchantRegistryRecord[]>(query, queryParams);

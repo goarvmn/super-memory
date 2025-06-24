@@ -223,45 +223,22 @@ export class GroupService implements IGroupService {
         failed: [],
       };
 
-      for (const merchant of merchants) {
-        try {
-          // validate merchant data
-          if (!merchant.id || !merchant.code?.trim()) {
-            result.failed.push({
-              code: merchant.code || 'unknown',
-              error: 'Merchant ID and code are required',
-            });
-            continue;
-          }
+      // Process all merchants in parallel
+      const results = await Promise.allSettled(
+        merchants.map((merchant, index) => this.processMerchantForGroup(merchant, group_id, index))
+      );
 
-          // check if merchant is already in this group
-          const isInGroup = await this.groupRepository.isMemberOfGroup(group_id, merchant.id);
-          if (isInGroup) {
-            result.failed.push({
-              code: merchant.code,
-              error: `Merchant "${merchant.code}" is already in this group`,
-            });
-            continue;
-          }
-
-          // register merchant if not already registered
-          const registeredMerchant = await this.merchantRepository.findRegisteredMerchant({ merchant_id: merchant.id });
-
-          if (!registeredMerchant) {
-            await this.merchantRepository.addMerchantToRegistry(merchant);
-          }
-
-          await this.groupRepository.assignMemberToGroup(group_id, merchant.id, merchant.is_merchant_source ?? false);
-
+      // Collect results
+      results.forEach((promiseResult, index) => {
+        if (promiseResult.status === 'fulfilled') {
           result.successCount++;
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to process merchant';
+        } else {
           result.failed.push({
-            code: merchant.code,
-            error: errorMessage,
+            code: merchants[index].code || 'unknown',
+            error: promiseResult.reason.message,
           });
         }
-      }
+      });
 
       return result;
     } catch (error) {
@@ -334,5 +311,38 @@ export class GroupService implements IGroupService {
       const errorMessage = error instanceof Error ? error.message : 'Failed to set template source';
       throw new Error(`Set template source failed: ${errorMessage}`);
     }
+  }
+
+  /**
+   * Process single merchant addition to group
+   * Private method to handle individual merchant processing with validation and registration
+   */
+  private async processMerchantForGroup(
+    merchant: AddMerchantToRegistryRequest,
+    group_id: number,
+    _index: number
+  ): Promise<void> {
+    // validate merchant data
+    if (!merchant.id || !merchant.code?.trim()) {
+      throw new Error('Merchant ID and code are required');
+    }
+
+    // check if merchant is already in this group
+    const isInGroup = await this.groupRepository.isMemberOfGroup(group_id, merchant.id);
+    if (isInGroup) {
+      throw new Error(`Merchant "${merchant.code}" is already in this group`);
+    }
+
+    // register merchant if not already registered
+    const registeredMerchant = await this.merchantRepository.findRegisteredMerchant({
+      merchant_id: merchant.id,
+    });
+
+    if (!registeredMerchant) {
+      await this.merchantRepository.addMerchantToRegistry(merchant);
+    }
+
+    // assign merchant to group
+    await this.groupRepository.assignMemberToGroup(group_id, merchant.id, merchant.is_merchant_source ?? false);
   }
 }

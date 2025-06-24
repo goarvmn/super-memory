@@ -239,10 +239,23 @@ export class GroupRepository implements IGroupRepository {
 
   /**
    * Delete group
-   * Business logic: soft delete a group by setting its status to inactive (0), preserving data for audit purposes
+   * Business logic: delete group and deactivate all members, members become inactive individuals
    */
   async deleteGroup(group_id: number): Promise<void> {
-    await this.database.update('merchant_groups', { id: group_id }, { status: 0 });
+    const transaction = await this.database.startTransaction();
+
+    try {
+      // deactivate all members
+      await transaction.update('merchant_group_members', { group_id: group_id }, { status: false });
+
+      // delete group
+      await transaction.delete('merchant_groups', { id: group_id });
+
+      await transaction.commit();
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
   }
 
   /**
