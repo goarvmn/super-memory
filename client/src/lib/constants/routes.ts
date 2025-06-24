@@ -4,10 +4,7 @@
  * Client route paths
  */
 export const ROUTES = {
-  LOGIN: '/login',
   DASHBOARD: '/',
-  MERCHANTS: '/merchants',
-  PRODUCTS: '/products',
-  MAPPINGS: '/mappings',
-  AUDIT: '/audit',
+  LOGIN: '/login',
+  MERCHANTS: '/merchant',
 } as const;
