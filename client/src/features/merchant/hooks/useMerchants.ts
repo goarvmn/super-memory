@@ -1,7 +1,7 @@
 // client/src/features/merchant/hooks/useMerchants.ts
 
 import { createMerchantsResponse } from '@/lib/data/merchant';
-import { useMerchantStore, useUiStore } from '@/lib/stores/merchant';
+import { useGroupStore, useMerchantStore, useUiStore } from '@/lib/stores/merchant';
 import type { MerchantRegistryWithStats, UpdateMerchantRegistryRequest } from '@guesense-dash/shared';
 import { useCallback, useEffect } from 'react';
 
@@ -16,6 +16,7 @@ export const useMerchants = () => {
     configMerchant,
     setConfigMerchant,
   } = useMerchantStore();
+  const { updateGroup, selectedGroup, setSelectedGroup } = useGroupStore();
 
   const { setLoadingState } = useUiStore();
 
@@ -52,11 +53,46 @@ export const useMerchants = () => {
       try {
         setLoadingState('save-merchant-config', true);
 
+        const selected = registeredMerchants.find(m => m.registryId === registryId);
+        const oldGroupId = selected?.groupId;
+        const newGroupId = configData.groupId;
+
         // Optimistic update (immediate UI feedback)
         updateMerchantRegistry(registryId, configData);
 
-        // API call (TODO: Replace with real API)
-        // const updatedMerchant = await merchantAPI.updateMerchantRegistry(registryId, registryData);
+        if (oldGroupId !== newGroupId) {
+          if (oldGroupId) {
+            updateGroup(oldGroupId, { membersCount: -1 });
+
+            // handle decrement
+            if (selectedGroup?.id === oldGroupId) {
+              const counter = (selectedGroup.membersCount ?? 0) - 1;
+              const members = selectedGroup.members.filter(member => member.id !== registryId);
+              const updatedGroup = { ...selectedGroup, membersCount: counter < 0 ? 0 : counter, members };
+              console.log('selected', selected);
+              console.log('updatedGroup', updatedGroup);
+              setSelectedGroup(updatedGroup);
+            }
+          }
+
+          // handle increment
+          if (newGroupId) {
+            updateGroup(newGroupId, { membersCount: +1 });
+
+            if (selectedGroup?.id === newGroupId) {
+              const counter = (selectedGroup.membersCount ?? 0) + 1;
+              // append selected to group members
+              delete selected?.groupId;
+              const members = selectedGroup.members.concat({ ...selected, isMerchantSource: false });
+              const updatedGroup = { ...selectedGroup, membersCount: counter > 0 ? counter : 0, members };
+              console.log('selected', selected);
+              console.log('updatedGroup', updatedGroup);
+              setSelectedGroup(updatedGroup);
+            }
+          }
+        }
+
+        // @TODO: API integration
 
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -74,7 +110,7 @@ export const useMerchants = () => {
         setLoadingState('save-merchant-config', false);
       }
     },
-    [updateMerchantRegistry, setLoadingState, loadMerchants]
+    [updateMerchantRegistry, updateGroup, selectedGroup, setSelectedGroup, setLoadingState, loadMerchants]
   );
 
   // Delete merchant from registry
@@ -83,16 +119,14 @@ export const useMerchants = () => {
       try {
         setLoadingState('delete-merchant', true);
 
-        console.log(selectedMerchant, registryId);
+        // Optimistic update (immediate UI feedback)
+        removeMerchantFromRegistry(registryId);
+
         if (selectedMerchant?.registryId === registryId) {
           setSelectedMerchant(null);
         }
 
-        // Optimistic update (immediate UI feedback)
-        removeMerchantFromRegistry(registryId);
-
-        // API call (TODO: Replace with real API)
-        // await merchantAPI.removeMerchantFromRegistry(registryId);
+        // @TODO: API integration
 
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -110,7 +144,7 @@ export const useMerchants = () => {
         setLoadingState('delete-merchant', false);
       }
     },
-    [removeMerchantFromRegistry, setLoadingState, loadMerchants]
+    [removeMerchantFromRegistry, setLoadingState, loadMerchants, setSelectedMerchant, selectedMerchant]
   );
 
   // Add new merchant to registry
@@ -119,8 +153,7 @@ export const useMerchants = () => {
       try {
         setLoadingState('add-merchant', true);
 
-        // TODO: Replace with real API call
-        // const newMerchant = await merchantAPI.addMerchantToRegistry(merchantData);
+        // @TODO: API integration
 
         // Simulate API
         await new Promise(resolve => setTimeout(resolve, 1000));

@@ -75,8 +75,7 @@ export const useGroups = () => {
         // Optimistic update (immediate UI feedback)
         removeGroup(groupId);
 
-        // 2. API call (TODO: Replace with real API)
-        // await merchantAPI.removeMerchantFromRegistry(registryId);
+        // @TODO: API integration
 
         // Simulate API call
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -84,7 +83,7 @@ export const useGroups = () => {
 
         // Clear selection if deleted group was selected
         if (selectedGroup?.id === groupId) {
-          selectGroup(null);
+          setSelectedGroup(null);
         }
 
         return { success: true };
@@ -99,7 +98,7 @@ export const useGroups = () => {
         setLoadingState('delete-group', false);
       }
     },
-    [removeGroup, setLoadingState, loadGroups]
+    [removeGroup, setLoadingState, loadGroups, setSelectedGroup, selectedGroup]
   );
 
   // Refresh groups data
@@ -118,9 +117,7 @@ export const useGroups = () => {
       try {
         setLoadingState(`load-group-${group.id}`, true);
 
-        // Fetch detailed group with members
-        // TODO: Replace with real API
-        // const groupWithMembers = await groupAPI.getGroupWithMembers(group.id);
+        // @TODO: API integration
 
         const groupWithMembers = await getGroupWithMembers(group.id);
         if (groupWithMembers) {
@@ -146,9 +143,7 @@ export const useGroups = () => {
       try {
         setLoadingState(`load-config-${group.id}`, true);
 
-        // Fetch detailed group with members for config
-        // TODO: Replace with real API
-        // const groupWithMembers = await groupAPI.getGroupWithMembers(group.id);
+        // @TODO: API integration
 
         const groupWithMembers = await getGroupWithMembers(group.id);
         if (groupWithMembers) {

@@ -39,8 +39,9 @@ const MerchantDashboard: React.FC = () => {
   const itemsPerPage = 6;
 
   // Stats from aggregated data
+  const ungroupedMerchants = registeredMerchants.filter(merchant => merchant.groupId === null);
   const stats = {
-    totalMerchants: registeredMerchants.length,
+    totalMerchants: ungroupedMerchants.length,
     totalGroups: groups.length,
   };
 
@@ -109,11 +110,13 @@ const MerchantDashboard: React.FC = () => {
 
   // Pagination helpers
   const paginateMerchants = () => {
-    const filtered = registeredMerchants.filter(
-      merchant =>
-        merchant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        merchant.code.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = registeredMerchants
+      .filter(merchant => merchant.groupId === null)
+      .filter(
+        merchant =>
+          merchant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          merchant.code.toLowerCase().includes(searchTerm.toLowerCase())
+      );
 
     const startIndex = (merchantsPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
@@ -128,7 +131,7 @@ const MerchantDashboard: React.FC = () => {
     return filtered.slice(startIndex, endIndex);
   };
 
-  const totalMerchantsPages = Math.ceil(registeredMerchants.length / itemsPerPage);
+  const totalMerchantsPages = Math.ceil(ungroupedMerchants.length / itemsPerPage);
   const totalGroupsPages = Math.ceil(groups.length / itemsPerPage);
 
   const filteredMerchants = paginateMerchants();
@@ -231,9 +234,14 @@ const MerchantDashboard: React.FC = () => {
           {filteredMerchants.length > 0 && (
             <div className="flex items-center justify-between mt-8">
               <div className="text-sm text-gray-600">
-                Showing {(merchantsPage - 1) * itemsPerPage + 1} to{' '}
-                {Math.min(merchantsPage * itemsPerPage, filteredMerchants.length)} of {filteredMerchants.length}{' '}
-                merchants
+                {(() => {
+                  const startIndex = (merchantsPage - 1) * itemsPerPage + 1;
+                  const endIndex = Math.min(merchantsPage * itemsPerPage, ungroupedMerchants.length);
+
+                  return startIndex === endIndex
+                    ? `Showing ${startIndex} of ${ungroupedMerchants.length} merchants`
+                    : `Showing ${startIndex} to ${endIndex} of ${ungroupedMerchants.length} merchants`;
+                })()}
               </div>
               <div className="flex gap-2">
                 <Button

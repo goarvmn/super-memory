@@ -73,6 +73,7 @@ export interface UpdateGroupRequest {
   name?: string;
   status?: number;
   merchantSourceId?: number | null;
+  membersCount?: number;
 }
 
 export interface BulkAddMerchantsResponse {

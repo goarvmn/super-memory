@@ -34,6 +34,7 @@ export const useGroupStore = create<GroupState>(set => ({
           const updated = {
             ...group,
             ...data,
+            membersCount: (group?.membersCount ?? 0) + (data?.membersCount ?? 0),
           };
           return updated;
         }
