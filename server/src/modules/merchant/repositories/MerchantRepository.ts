@@ -3,13 +3,26 @@
 import {
   AddMerchantToRegistryRequest,
   Merchant,
-  MerchantWithRegistry,
+  MerchantRegistry,
   UpdateMerchantRegistryRequest,
 } from '@guesense-dash/shared';
 import { inject, injectable } from 'inversify';
-import { DatabasePort } from '../../../infrastructure/adapters/database/DatabasePort';
+import { DatabasePort } from '../../../infrastructure/adapters/database';
 import { CommonParams, DI_TYPES } from '../../../shared';
-import { IMerchantRepository } from '../interfaces';
+import { IMerchantRepository, MerchantMemberRecord } from '../interfaces';
+
+/**
+ * Database record interfaces for typing
+ */
+interface MerchantRegistryRecord {
+  id: number;
+  name: string;
+  code: string;
+  registry_id: number;
+  registry_status: number;
+  group_id: number | null;
+  is_merchant_source: boolean;
+}
 
 @injectable()
 export class MerchantRepository implements IMerchantRepository {
@@ -17,13 +30,13 @@ export class MerchantRepository implements IMerchantRepository {
 
   /**
    * Get available merchants
-   * Bussiness logic: get all active merchants from table `merchants` and filter out merchants that are already registered in the registry
+   * Business logic: get all active merchants from table `merchants` that are not yet registered in the registry
    */
   async getAvailableMerchants(params: CommonParams = {}): Promise<Merchant[]> {
     const { search, limit, offset } = params;
 
     let query = `
-      SELECT m.id, m.merchant_name as name, m.goapotik_merchant_code as merchant_code
+      SELECT m.id, m.merchant_name as name, m.goapotik_merchant_code as code
       FROM merchants m
       LEFT JOIN merchant_group_members mgm ON m.id = mgm.merchant_id
       WHERE m.status = 1 AND mgm.merchant_id IS NULL
@@ -44,15 +57,15 @@ export class MerchantRepository implements IMerchantRepository {
 
   /**
    * Get registered merchants
-   * Bussiness logic: get all merchants from `merchant_group_members` and filter out merchants that are not registered in the registry
+   * Business logic: get all merchants that are already registered in the registry as individual merchants (not part of any group)
    */
-  async getRegisteredMerchants(params: CommonParams = {}): Promise<MerchantWithRegistry[]> {
+  async getRegisteredMerchants(params: CommonParams = {}): Promise<MerchantRegistry[]> {
     const { search, status, limit, offset } = params;
 
     let query = `
       SELECT 
-        m.id, m.merchant_name as name, m.goapotik_merchant_code as merchant_code,
-        mgm.id as registry_id, mgm.status, mgm.group_id, mgm.is_merchant_source
+        m.id, m.merchant_name as name, m.goapotik_merchant_code as code,
+        mgm.id as registry_id, mgm.status as registry_status, mgm.group_id, mgm.is_merchant_source
       FROM merchants m
       INNER JOIN merchant_group_members mgm ON m.id = mgm.merchant_id
       WHERE mgm.group_id IS NULL
@@ -70,22 +83,33 @@ export class MerchantRepository implements IMerchantRepository {
       queryParams.push(status);
     }
 
-    query += ` ORDER BY mgm.id DESC LIMIT ? OFFSET ?`;
+    query += ` ORDER BY mgm.id DESC, mgm.status DESC LIMIT ? OFFSET ?`; // order by id and make sure inactive is last
     queryParams.push(limit, offset);
 
-    return await this.database.query<MerchantWithRegistry[]>(query, queryParams);
+    const result = await this.database.query<MerchantRegistryRecord[]>(query, queryParams);
+
+    // transform to MerchantRegistry
+    return result.map<MerchantRegistry>(merchant => ({
+      id: merchant.id,
+      name: merchant.name,
+      code: merchant.code,
+      registryId: merchant.registry_id,
+      registryStatus: merchant.registry_status,
+      groupId: merchant.group_id,
+      isMerchantSource: merchant.is_merchant_source,
+    }));
   }
 
   /**
    * Add merchant to registry
-   * Bussiness logic: add merchant to `merchant_group_members`
+   * Business logic: register a merchant by adding to `merchant_group_members`
    */
   async addMerchantToRegistry(params: AddMerchantToRegistryRequest): Promise<number> {
     const member = await this.database.create<any>('merchant_group_members', {
-      group_id: null, // by default, set to null to indicate individual merchant
-      merchant_id: params.merchant_id,
-      merchant_code: params.merchant_code,
-      is_merchant_source: false,
+      merchant_id: params.id,
+      merchant_code: params.code,
+      group_id: params?.group_id ?? null,
+      is_merchant_source: params?.is_merchant_source ?? false,
     });
 
     return member.id;
@@ -93,34 +117,37 @@ export class MerchantRepository implements IMerchantRepository {
 
   /**
    * Update merchant in registry
-   * Bussiness logic: update merchant from `merchant_group_members`
+   * Business logic: update merchant registration data in `merchant_group_members`
    */
   async updateMerchantInRegistry(params: UpdateMerchantRegistryRequest): Promise<void> {
-    const { registry_id, ...updateData } = params;
+    const { registryId, groupId, registryStatus } = params;
 
-    await this.database.update('merchant_group_members', { id: registry_id }, updateData);
+    await this.database.update(
+      'merchant_group_members',
+      { id: registryId },
+      { group_id: groupId, status: registryStatus }
+    );
   }
 
   /**
    * Remove merchant from registry
-   * Bussiness logic: remove merchant from `merchant_group_members`
+   * Business logic: unregister a merchant by removing its record from `merchant_group_members`
    */
-  async removeMerchantFromRegistry(registryId: number): Promise<void> {
-    await this.database.delete('merchant_group_members', { id: registryId });
+  async removeMerchantFromRegistry(registry_id: number): Promise<void> {
+    await this.database.delete('merchant_group_members', { id: registry_id });
   }
 
   /**
-   * Check if merchant is registered
-   * Bussiness logic: check if merchant is registered in `merchant_group_members`
+   * Find registered merchant
+   * Business logic: find a merchant in the registry by partial matching on `merchant_group_members`
    */
-  async isMerchantRegistered(merchantId: number): Promise<boolean> {
-    const result = await this.database.findOne('merchant_group_members', { merchant_id: merchantId });
-    return !!result;
+  async findRegisteredMerchant(params: Partial<MerchantMemberRecord>): Promise<MerchantMemberRecord | null> {
+    return await this.database.findOne<MerchantMemberRecord>('merchant_group_members', params);
   }
 
   /**
-   * Get reigistered merchants count
-   * Bussiness logic: get count of registered merchants
+   * Get registered merchants count
+   * Business logic: count total number of active registered individual merchants in the registry
    */
   async getRegisteredMerchantsCount(params: CommonParams = {}): Promise<number> {
     const { search, status } = params;
@@ -136,8 +163,8 @@ export class MerchantRepository implements IMerchantRepository {
     const queryParams: any[] = [];
 
     if (search) {
-      query += ` AND (m.name LIKE ?)`;
-      queryParams.push(`%${search}%`, `%${search}%`);
+      query += ` AND (m.merchant_name LIKE ?)`;
+      queryParams.push(`%${search}%`);
     }
 
     if (status !== undefined) {

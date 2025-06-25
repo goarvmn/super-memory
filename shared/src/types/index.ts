@@ -2,4 +2,4 @@
 
 export type { User } from './auth';
 
-export type { GroupMember, GroupSummary, GroupWithMembers, Merchant, MerchantWithRegistry } from './merchant';
+export type { GroupSummary, GroupWithMembers, Merchant, MerchantRegistry, MerchantRegistryWithStats } from './merchant';

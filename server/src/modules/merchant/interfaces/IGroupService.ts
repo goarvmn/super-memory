@@ -18,52 +18,57 @@ import { CommonParams } from 'server/src/shared';
 export interface IGroupService {
   /**
    * Get all groups
-   * Bussiness logic: get all groups with pagination
+   * Business logic: retrieve all active groups with member counts, pagination support, and total count calculation
    */
   getAllGroups(params?: CommonParams): Promise<GetGroupsResponse>;
 
   /**
    * Get group detail with members
-   * Bussiness logic: get group detail with active members
+   * Business logic: retrieve group information along with all active members, includes validation to ensure group exists
    */
-  getGroupWithMembers(groupId: number): Promise<GroupWithMembers>;
+  getGroupWithMembers(group_id: number): Promise<GroupWithMembers>;
 
   /**
    * Create new group with members
-   * Bussiness logic: create new group with members
+   * Business logic: atomically create a new group with initial members (not yet registered in registry), validates group name, member data,
+   * checks for duplicate registrations, and optionally designates a source merchant
    */
   createGroupWithMembers(
-    groupData: CreateGroupRequest,
+    group_data: CreateGroupRequest,
     members: AddMerchantToRegistryRequest[],
-    merchantSourceId?: number
+    merchant_source_id?: number
   ): Promise<CreateGroupResponse>;
 
   /**
    * Update group
-   * Bussiness logic: update group information
+   * Business logic: update group information with validation to ensure group exists and name meets minimum requirements
    */
   updateGroup(params: UpdateGroupRequest): Promise<void>;
 
   /**
    * Delete group
-   * Bussiness logic: remove group from list
+   * Business logic: soft delete a group by setting status to inactive, preserves data for audit purposes with validation
    */
-  deleteGroup(groupId: number): Promise<void>;
+  deleteGroup(group_id: number): Promise<void>;
 
   /**
    * Add merchant(s) to group
-   * Bussiness logic: add merchant(s) to group with bulk operation
+   * Business logic: bulk add multiple merchants to an existing group, automatically registers unregistered merchants,
+   * validates duplicate memberships, and provides detailed success/failure reporting
    */
-  addMerchantsToGroup(groupId: number, merchants: AddMerchantToRegistryRequest[]): Promise<BulkAddMerchantsResponse>;
+  addMerchantsToGroup(group_id: number, merchants: AddMerchantToRegistryRequest[]): Promise<BulkAddMerchantsResponse>;
 
   /**
    * Remove member from group
-   * Bussiness logic: remove member from group
+   * Business logic: soft delete a member from group, member automatically becomes individual merchant,
+   * validates group and member existence before removal
    */
-  removeMemberFromGroup(groupId: number, merchantId: number): Promise<void>;
+  removeMemberFromGroup(group_id: number, merchant_id: number): Promise<void>;
 
   /**
    * Set template source merchant
+   * Business logic: atomically designate a merchant as the template source for a group,
+   * validates that merchant is an active member of the group before setting as source
    */
-  setTemplateSource(groupId: number, merchantId: number): Promise<void>;
+  setTemplateSource(group_id: number, merchant_id: number): Promise<void>;
 }

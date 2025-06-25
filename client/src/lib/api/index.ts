@@ -6,3 +6,4 @@ import './interceptors';
 // Export API methods
 export { authApi } from './auth.api';
 export { apiClient } from './axios.config';
+export { merchantApi } from './merchant.api';

@@ -15,31 +15,32 @@ import { CommonParams } from 'server/src/shared';
 export interface IMerchantService {
   /**
    * Get available merchants
-   * Bussiness logic: get all merchants that are not registered in the registry
+   * Business logic: retrieve all active merchants that are available for registration (not yet registered in the registry)
    */
   getAvailableMerchants(params?: CommonParams): Promise<Merchant[]>;
 
   /**
    * Get registered merchants
-   * Bussiness logic: get all merchants that are registered in the registry with pagination
+   * Business logic: retrieve all merchants that are already registered in the registry with pagination support and total count
    */
   getRegisteredMerchants(params?: CommonParams): Promise<GetMerchantsResponse>;
 
   /**
-   * Add merchant to registry
-   * Bussiness logic: add merchant(s) to registry
+   * Add merchants to registry
+   * Business logic: batch register multiple merchants to the registry with validation.
+   * Returns success/failure count and details for each merchant processing attempt
    */
   addMerchantToRegistry(params: AddMerchantToRegistryRequest[]): Promise<AddMerchantToRegistryResponse>;
 
   /**
    * Update merchant registry
-   * Bussiness logic: update merchant in registry
+   * Business logic: update merchant registration data in the registry with validation of required registry ID
    */
   updateMerchantRegistry(params: UpdateMerchantRegistryRequest): Promise<void>;
 
   /**
    * Remove merchant from registry
-   * Bussiness logic: remove merchant from registry
+   * Business logic: unregister a merchant from the registry by removing its registration record with validation
    */
   removeMerchantFromRegistry(registryId: number): Promise<void>;
 }

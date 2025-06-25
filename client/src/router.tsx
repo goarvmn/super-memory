@@ -7,12 +7,17 @@ import { ROUTES } from '@/lib';
 import { Dashboard } from '@/pages/Dashboard';
 import { NotFound } from '@/pages/NotFound';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import MerchantDashboard from './features/merchant/pages/MerchantDashboard';
 
 export const router = createBrowserRouter([
   // Public routes
   {
     path: ROUTES.LOGIN,
     element: <LoginPage />,
+  },
+  {
+    path: 'merchant',
+    element: <MerchantDashboard />,
   },
 
   // Protected routes
